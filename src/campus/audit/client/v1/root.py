@@ -32,3 +32,25 @@ class AuditRoot(ResourceRoot):
                 root=self
             )
         return self._traces
+
+    @property
+    def journeys(self):
+        """Get the journeys resource."""
+        if not hasattr(self, "_journeys"):
+            from .journeys import Journeys
+            self._journeys = Journeys(
+                client=self._client,
+                root=self
+            )
+        return self._journeys
+
+    @property
+    def apikeys(self):
+        """Get the apikeys resource."""
+        if not hasattr(self, "_apikeys"):
+            from .apikeys import ApiKeys
+            self._apikeys = ApiKeys(
+                client=self._client,
+                root=self
+            )
+        return self._apikeys

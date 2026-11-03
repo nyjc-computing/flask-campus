@@ -123,3 +123,13 @@ class AuditClient:
     def traces(self):
         """Get the traces resource for ingesting and querying spans."""
         return self._root.traces
+
+    @property
+    def journeys(self):
+        """Get the journeys resource for querying a journey's traces."""
+        return self._root.journeys
+
+    @property
+    def apikeys(self):
+        """Get the apikeys resource for managing audit API keys."""
+        return self._root.apikeys
