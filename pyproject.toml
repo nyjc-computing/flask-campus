@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "flask-campus"
-version = "0.1.1"
+version = "0.1.2"
 description = "Flask consumer layer for Campus apps: flask_campus glue + audit middleware/client/http - PEP 420 namespace portions under campus/flask_campus and campus/audit"
 authors = ["Ng Jun Siang <ngjunsiang@gmail.com>"]
 readme = "README.md"

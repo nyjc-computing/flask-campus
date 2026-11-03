@@ -41,3 +41,12 @@ imports services or the storage/webauth core), strict-0.x versioning
   next minor release (no-double-ship rule: never install
   campus-suite + flask-campus ≥0.1.1 together until campus-suite
   ≥0.8.0, which stops shipping the module).
+
+## 0.1.2 — 2026-11-04
+
+- `campus.audit.roles` becomes a package (`campus/audit/roles/__init__.py`)
+  instead of a bare module. Import paths are unchanged; the wheel portion
+  for the shared `campus/audit/` subnamespace stays subpackage-only, which
+  keeps pyright's pkgutil-style portion resolution working for consumers
+  (a loose `.py` file in the portion made pyright drop the whole merged
+  portion, breaking `campus.audit.middleware` imports downstream too).
