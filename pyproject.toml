@@ -1,0 +1,63 @@
+[tool.poetry]
+name = "flask-campus"
+version = "0.1.0"
+description = "Flask consumer layer for Campus apps: flask_campus glue + audit middleware/client/http - PEP 420 namespace portions under campus/flask_campus and campus/audit"
+authors = ["Ng Jun Siang <ngjunsiang@gmail.com>"]
+readme = "README.md"
+packages = [
+    {include = "campus", from = "src"},
+]
+
+[tool.poetry.dependencies]
+python = ">=3.11.0,<3.15"
+flask = "^3.0.0"
+werkzeug = "^3.0.0"
+requests = "^2.32.4"
+# The campus.* portions this dist imports. Direct-URL deps bake the exact
+# source URL into wheel metadata, so a campus-common/campus-model bump
+# requires a rebuild here (and downstream direct pins must match).
+campus-common = {url = "https://github.com/nyjc-computing/campus-common/releases/download/v0.3.1/campus_common-0.3.1-py3-none-any.whl"}
+campus-model = {url = "https://github.com/nyjc-computing/campus-model/releases/download/v0.1.3/campus_model-0.1.3-py3-none-any.whl"}
+# Session/login context seams + tracing propagation headers (framework-free
+# halves). Git dep: the SDK ships via branch pins, no release wheels.
+# (Dep name matches the SDK package's distribution name; the import
+# name is campus_python.)
+campus-api-python = {git = "https://github.com/nyjc-computing/campus-api-python.git", branch = "main"}
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.16.9"
+pyright = "^1.1.391"
+# openapi.py spec validation in tests (same pin as the suite)
+openapi-spec-validator = "^0.7.2"
+
+[tool.pyright]
+include = ["src", "tests"]
+useLibraryCodeForTypes = true
+venvPath = "."
+venv = ".venv"
+stubPath = ""
+exclude = ["**/__pycache__", ".venv"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+
+[tool.ruff.lint.isort]
+# The campus namespace spans multiple distributions; without this,
+# src-based first-party detection classifies campus.* third-party and
+# import blocks split after every carve (nyjc-computing/campus#987).
+# campus_python stays third-party, matching the monorepo convention.
+known-first-party = ["campus"]
+
+[tool.ruff.lint]
+select = ['E', 'W', 'F', 'I', 'B', 'C4', 'SIM']
+# Policy (mirrors the campus monorepo): ruff enforces style; humans rewrite
+# code. Autofixes are disabled repo-wide (see campus docs/STYLE-GUIDE.md).
+fixable = []
+ignore = [
+    'W291', 'W292', 'W293',  # trailing whitespace: formatting, not lint
+]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

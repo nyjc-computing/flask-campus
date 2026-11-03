@@ -1,0 +1,1 @@
+"""flask-campus test package."""
