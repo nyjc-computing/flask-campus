@@ -30,3 +30,14 @@ Interface kit from day one: closed-world `__all__` per package,
 checked-in interface manifest, boundary guard (consumer layer never
 imports services or the storage/webauth core), strict-0.x versioning
 (README/CHANGELOG).
+
+## 0.1.1 — 2026-11-04
+
+- New `campus.audit.roles` module (moved from the campus-suite audit
+  service): the audit key-role/scope catalogue (`list_roles`,
+  `resolve_role`, `resolve_scopes`). Additive (patch) — a downstream
+  consumer (campus-admin's key management) needs the same vocabulary
+  the service mints against, and the suite's copy is removed in its
+  next minor release (no-double-ship rule: never install
+  campus-suite + flask-campus ≥0.1.1 together until campus-suite
+  ≥0.8.0, which stops shipping the module).

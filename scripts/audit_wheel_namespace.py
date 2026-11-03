@@ -28,6 +28,14 @@ from pathlib import Path
 
 NAMESPACE = "campus"
 
+# Subnamespace portions whose __init__.py is owned by ANOTHER dist: the
+# campus-suite wheel ships campus/audit/__init__.py (the audit service's
+# init_app), while this dist contributes loose modules + subpackages
+# into campus/audit/ (#993). An init-less dir here is deliberate — the
+# pkgutil extend_path on the suite side merges the portions. Everything
+# else must stay a regular package.
+SHARED_PORTIONS = {f"{NAMESPACE}/audit"}
+
 
 def audit_wheel(wheel: Path) -> list[str]:
     """Return a list of namespace violations for one built wheel."""
@@ -45,7 +53,7 @@ def audit_wheel(wheel: Path) -> list[str]:
     py_dirs = {n.rsplit("/", 1)[0] for n in names if n.endswith(".py") and "/" in n}
     shipped = {d for d in py_dirs if d.startswith(f"{NAMESPACE}/") and d != NAMESPACE}
     for directory in sorted(shipped):
-        if f"{directory}/__init__.py" not in names:
+        if f"{directory}/__init__.py" not in names and directory not in SHARED_PORTIONS:
             problems.append(f"{wheel.name}: {directory}/ ships .py files without __init__.py")
 
     if not shipped and not any(n.startswith(f"{NAMESPACE}/") for n in names):
