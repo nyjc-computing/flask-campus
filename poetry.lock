@@ -108,19 +108,18 @@ description = "Campus API for Python projects"
 optional = false
 python-versions = ">=3.11,<3.15"
 groups = ["main"]
-files = []
-develop = false
+files = [
+    {file = "campus_api_python-0.6.0-py3-none-any.whl", hash = "sha256:10cf157e82b4cbeb5aca16f6efd8419a4e52e76104ba7ff6c40c564328063d23"},
+]
 
 [package.dependencies]
-campus-common = {url = "https://github.com/nyjc-computing/campus-common/releases/download/v0.3.1/campus_common-0.3.1-py3-none-any.whl"}
-campus-model = {url = "https://github.com/nyjc-computing/campus-model/releases/download/v0.1.3/campus_model-0.1.3-py3-none-any.whl"}
-requests = "^2.32.4"
+campus_common = {url = "https://github.com/nyjc-computing/campus-common/releases/download/v0.3.1/campus_common-0.3.1-py3-none-any.whl"}
+campus_model = {url = "https://github.com/nyjc-computing/campus-model/releases/download/v0.1.3/campus_model-0.1.3-py3-none-any.whl"}
+requests = ">=2.32.4,<3.0.0"
 
 [package.source]
-type = "git"
-url = "https://github.com/nyjc-computing/campus-api-python.git"
-reference = "main"
-resolved_reference = "8806d68d4f4a203f719dd1f6815067348088501c"
+type = "url"
+url = "https://github.com/nyjc-computing/campus-api-python/releases/download/v0.6.0/campus_api_python-0.6.0-py3-none-any.whl"
 
 [[package]]
 name = "campus-common"
@@ -1173,4 +1172,4 @@ watchdog = ["watchdog (>=2.3)"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11.0,<3.15"
-content-hash = "434a38983a664f2eb1cc73f25b2bfb0ed5f8d6b6b8614f8c0fae8b10e124db96"
+content-hash = "2146ca1b15214109b7abdec313aa66b75073b81b9a18694910cad047338fc98d"
