@@ -17,14 +17,14 @@ requests = "^2.32.4"
 # source URL into wheel metadata, so a campus-common/campus-model bump
 # requires a rebuild here (and downstream direct pins must match).
 campus-common = {url = "https://github.com/nyjc-computing/campus-common/releases/download/v0.3.1/campus_common-0.3.1-py3-none-any.whl"}
-campus-model = {url = "https://github.com/nyjc-computing/campus-model/releases/download/v0.1.3/campus_model-0.1.3-py3-none-any.whl"}
+campus-model = {url = "https://github.com/nyjc-computing/campus-model/releases/download/v0.1.4/campus_model-0.1.4-py3-none-any.whl"}
 # Session/login context seams + tracing propagation headers (framework-free
 # halves). The SDK releases wheels like the other dists (sdk#137): the
 # URL is baked into this wheel's metadata, so an SDK bump requires a
 # rebuild here (and downstream direct pins must match).
 # (Dep name matches the SDK package's distribution name; the import
 # name is campus_python.)
-campus-api-python = {url = "https://github.com/nyjc-computing/campus-api-python/releases/download/v0.6.0/campus_api_python-0.6.0-py3-none-any.whl"}
+campus-api-python = {url = "https://github.com/nyjc-computing/campus-api-python/releases/download/v0.7.0/campus_api_python-0.7.0-py3-none-any.whl"}
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.16.9"
