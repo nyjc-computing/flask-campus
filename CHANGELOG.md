@@ -1,5 +1,5 @@
 # Changelog
-## 0.1.3 — 2026-11-05
+## 0.1.4 — 2026-11-05
 
 Dependency rebuild: campus-model pin v0.1.3 -> v0.1.4 (new
 `HostedApp` model, campus-classroom#81 / campus#1066). No code
