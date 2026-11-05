@@ -92,8 +92,8 @@ jobs:
         run: poetry run python scripts/audit_wheel_namespace.py
       # The install-surface smoke: prove the built wheel (not the src tree)
       # is installable and all four portions import from it. pip resolves
-      # campus-common/campus-model from the URLs baked into the wheel
-      # metadata and campus-python from its git URL.
+      # campus-common/campus-model and campus-api-python from the URLs
+      # baked into the wheel metadata.
       - name: Fresh-venv wheel smoke
         run: |
           python -m venv smoke-venv
