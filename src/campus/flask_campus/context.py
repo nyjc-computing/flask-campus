@@ -20,6 +20,7 @@ module is the sole owner.
 """
 
 __all__ = [
+    "DEFAULT_LOGIN_SCOPES",
     "LOGIN_STORAGE_KEY",
     "SESSION_STORAGE_KEY",
     "USER_CACHE_TTL_SECONDS",
@@ -53,6 +54,10 @@ logger = logging.getLogger(__name__)
 # cache a session-carrying browser pays 1-2 synchronous auth API calls
 # before every route. Warm requests within the window pay none.
 USER_CACHE_TTL_SECONDS = 60.0
+
+# Scopes a login session requests when the app does not widen them
+# (start_login's scopes parameter; OAuthLoginManager's login_scopes).
+DEFAULT_LOGIN_SCOPES = ["campus.profile"]
 
 # User-cache lane names (match AuthRoot's namespacing).
 LANE_SESSION = "session"
@@ -213,10 +218,32 @@ def push_context(campus: campus_python.Campus, cache: UserCache) -> None:
             flask.session.pop(LOGIN_STORAGE_KEY, None)
 
 
-def start_login(campus: campus_python.Campus, target: str) -> werkzeug.Response:
+def start_login(
+        campus: campus_python.Campus,
+        target: str,
+        scopes: list[str] | None = None,
+) -> werkzeug.Response:
     """Begin an authorization flow (the SDK authorize port).
 
     Returns a redirect response to the Campus OAuth authorize endpoint.
+
+    Args:
+        campus: The Campus client.
+        target: The OAuth callback URL the auth service redirects back
+            to (the app's /finalize_login route).
+        scopes: OAuth scopes to request for the minted user credential.
+            None (the default) keeps ["campus.profile"]. Apps whose
+            features need the signed-in user's token to carry
+            management scopes — the capability leg of the #865/#883
+            two-leg model, grant row AND token scope — pass the full
+            list, e.g. ["campus.profile", "timetable:admin"].
+            campus.auth validates requested scopes against the minting
+            client's allowed_scopes cap fail-closed (RFC 6749 §4.1.2.1
+            semantics), so extend the client's cap BEFORE deploying a
+            wider request. Scopes ride the auth session into the
+            exchanged token (requested_scopes = authsession.scopes),
+            so this list is exactly what lands on the user's stored
+            credential.
 
     IMPORTANT: This returns a redirect response directly (never fetches
     via requests) to preserve the browser's user agent and cookies. If
@@ -227,7 +254,7 @@ def start_login(campus: campus_python.Campus, target: str) -> werkzeug.Response:
 
     auth_session = campus.auth.sessions.new(
         redirect_uri=target,
-        scopes=["campus.profile"],
+        scopes=scopes or DEFAULT_LOGIN_SCOPES,
         target=target,
     )
     # Context owns the storage key; the SDK's new() writes the same key

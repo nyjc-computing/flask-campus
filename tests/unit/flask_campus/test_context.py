@@ -7,6 +7,7 @@ Covers: the SDK session-id provider installation, the user cache
 (#825 device ride-along), and logout's best-effort revocation.
 """
 
+import os
 import unittest
 from types import SimpleNamespace
 from unittest.mock import MagicMock, Mock, patch
@@ -190,6 +191,58 @@ class TestUserCache(unittest.TestCase):
         cache.pop("login", "login-1")
         self.assertIsNone(cache.get("login", "login-1"))
         self.assertIsNone(cache.get("login", None))
+
+
+class TestStartLogin(unittest.TestCase):
+    """start_login: scopes default and pass-through (#8), session
+    storage handoff, and the authorize redirect target."""
+
+    def setUp(self):
+        self.auth = make_auth()
+        self.campus = make_campus(self.auth)
+        self.auth.sessions.new.return_value = SimpleNamespace(id="state-1")
+        # start_login reads CLIENT_ID for the authorize URL params.
+        self.saved_client_id = os.environ.get("CLIENT_ID")
+        os.environ["CLIENT_ID"] = "uid-client-test"
+        self.addCleanup(self._restore_client_id)
+
+    def _restore_client_id(self):
+        if self.saved_client_id is None:
+            os.environ.pop("CLIENT_ID", None)
+        else:
+            os.environ["CLIENT_ID"] = self.saved_client_id
+
+    def test_default_requests_profile_scope(self):
+        with request_context():
+            response = context.start_login(
+                self.campus, "https://app.test/finalize_login"
+            )
+            self.assertEqual(response.status_code, 302)
+            self.assertIn(
+                "https://campusauth.test/auth/v1/authorize",
+                response.headers["Location"],
+            )
+            self.assertEqual(flask.session[SESSION_STORAGE_KEY], "state-1")
+        self.auth.sessions.new.assert_called_once_with(
+            redirect_uri="https://app.test/finalize_login",
+            scopes=["campus.profile"],
+            target="https://app.test/finalize_login",
+        )
+
+    def test_scopes_parameter_widens_the_request(self):
+        """A scopes list rides the auth session into the minted token
+        (#8): the capability leg of the #865/#883 two-leg model."""
+        with request_context():
+            context.start_login(
+                self.campus,
+                "https://app.test/finalize_login",
+                scopes=["campus.profile", "timetable:admin"],
+            )
+        self.auth.sessions.new.assert_called_once_with(
+            redirect_uri="https://app.test/finalize_login",
+            scopes=["campus.profile", "timetable:admin"],
+            target="https://app.test/finalize_login",
+        )
 
 
 class TestFinalizeLogin(unittest.TestCase):
