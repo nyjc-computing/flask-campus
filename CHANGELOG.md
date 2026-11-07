@@ -1,4 +1,13 @@
 # Changelog
+## 0.1.8 — 2026-11-07
+
+Dependency rebuild: campus-api-python pin v0.8.1 -> v0.8.2 (files[id]
+management surface, campus-api-python#125/#164). No code changes -
+direct-URL deps bake the pinned wheel URLs into this distribution's
+metadata, so the bump requires a rebuild here per the pin-rebuild
+contract.
+
+
 ## 0.1.7 — 2026-11-07
 
 feat: login flows can request scopes beyond `campus.profile` (#8).
