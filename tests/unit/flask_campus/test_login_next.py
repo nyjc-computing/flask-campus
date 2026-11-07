@@ -25,12 +25,14 @@ class _FakeAuth:
 
     def __init__(self):
         self.pushed = False
+        self.session_new_kwargs = None
 
         def _has_session():
             self.pushed = True
             return False
 
         def _new(**kwargs):
+            self.session_new_kwargs = kwargs
             return SimpleNamespace(id="state-1")
 
         self.sessions = SimpleNamespace(has_session=_has_session, new=_new)
@@ -116,6 +118,38 @@ class TestLoginNextValidation(unittest.TestCase):
         )
         self.assertIn("state=state-1", location)
         self.assertIn("response_type=code", location)
+
+    def test_default_login_requests_profile_scope_only(self):
+        self.client.get("/login")
+
+        self.assertEqual(
+            self.manager.campus.auth.session_new_kwargs["scopes"],
+            ["campus.profile"],
+        )
+
+    def test_login_scopes_ride_the_auth_session(self):
+        """OAuthLoginManager(login_scopes=...) widens the requested
+        scopes (#8) — apps no longer monkeypatch start_login."""
+        app = flask.Flask(__name__)
+        app.secret_key = "test-secret"
+
+        @app.get("/")
+        def index():
+            return ""
+
+        campus = _FakeCampus()
+        manager = OAuthLoginManager(
+            campus_client=campus,  # type: ignore[arg-type]
+            login_scopes=["campus.profile", "timetable:read",
+                          "timetable:admin"],
+        )
+        manager.init_app(app)
+        app.test_client().get("/login")
+
+        self.assertEqual(
+            campus.auth.session_new_kwargs["scopes"],
+            ["campus.profile", "timetable:read", "timetable:admin"],
+        )
 
 
 if __name__ == "__main__":

@@ -36,7 +36,8 @@ def _create_bp(
         push_hook: Callable[[], None],
         campus: campus_python.Campus,
         cache: context.UserCache,
-        default_endpoint: str
+        default_endpoint: str,
+        login_scopes: "list[str] | None" = None,
 ) -> flask.Blueprint:
     """Create authentication blueprint for Flask app.
 
@@ -45,6 +46,11 @@ def _create_bp(
         campus: Campus client instance
         cache: User cache backing the context push
         default_endpoint: Default endpoint to redirect to after login/logout
+        login_scopes: OAuth scopes the /login flow requests for the
+            minted user credential; None keeps context's
+            DEFAULT_LOGIN_SCOPES. Must be covered by the minting
+            client's allowed_scopes cap (validated fail-closed
+            upstream).
     """
     bp = flask.Blueprint("auth", __name__, url_prefix="/")
     bp.before_request(push_hook)
@@ -68,7 +74,9 @@ def _create_bp(
         # Use /finalize_login as the OAuth callback
         # Use url.full_url_for to get proper public URL (not localhost/internal host)
         callback_url = url.full_url_for('auth.finalize_login')
-        return context.start_login(campus, target=callback_url)
+        return context.start_login(
+            campus, target=callback_url, scopes=login_scopes
+        )
 
 
     @bp.get("/finalize_login")
@@ -148,7 +156,8 @@ class OAuthLoginManager:
     def __init__(
             self,
             campus_client: campus_python.Campus | None = None,
-            default_endpoint: str = "index"
+            default_endpoint: str = "index",
+            login_scopes: "list[str] | None" = None,
     ):
         """Initialize the OAuthLoginManager.
 
@@ -156,9 +165,18 @@ class OAuthLoginManager:
             campus_client: Optional Campus client instance. If None, a
                 new instance will be created.
             default_endpoint: Default endpoint to redirect to after login/logout
+            login_scopes: OAuth scopes the /login flow requests for the
+                minted user credential (rides start_login's scopes
+                parameter). None keeps ["campus.profile"]. Apps whose
+                features need management scopes on the user's token
+                (#865/#883 two-leg model) pass the full list — and
+                must extend their client's allowed_scopes cap BEFORE
+                deploying, since campus.auth validates the request
+                against that cap fail-closed.
         """
         self.campus = campus_client or campus_python.Campus()
         self.default_endpoint = default_endpoint
+        self.login_scopes = login_scopes
         self._cache = context.UserCache()
 
     def _push_context_hook(self) -> None:
@@ -193,7 +211,7 @@ class OAuthLoginManager:
         context.install_session_provider()
         bp = _create_bp(
             self._push_context_hook, self.campus, self._cache,
-            self.default_endpoint,
+            self.default_endpoint, login_scopes=self.login_scopes,
         )
         app.register_blueprint(bp)
         if isinstance(app, flask.Flask):

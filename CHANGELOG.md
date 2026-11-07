@@ -1,4 +1,19 @@
 # Changelog
+## 0.1.7 — 2026-11-07
+
+feat: login flows can request scopes beyond `campus.profile` (#8).
+`context.start_login` gains a `scopes` parameter and
+`OAuthLoginManager` a `login_scopes` parameter (threaded through the
+auth blueprint's /login view); None keeps the `["campus.profile"]`
+default. Apps whose features need management scopes on the signed-in
+user's token — the #865/#883 two-leg capability leg, e.g.
+nyxchange-timetable-v2's `timetable:admin` — no longer monkeypatch
+`start_login`. campus.auth validates the requested scopes against the
+minting client's `allowed_scopes` cap fail-closed, so extend the
+client cap BEFORE deploying a wider request. Additive (strict-0.x:
+patch bump); interface manifest unchanged in shape.
+
+
 ## 0.1.6 — 2026-11-07
 
 Dependency rebuild: campus-api-python pin v0.8.0 -> v0.8.1 and
