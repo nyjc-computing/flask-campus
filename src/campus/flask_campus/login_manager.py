@@ -19,7 +19,7 @@ from campus import flask_campus
 from campus.common import env
 from campus.common.services import get_base_url
 from campus.common.utils import url
-from campus.flask_campus import context
+from campus.flask_campus import circles, context
 
 
 def _is_safe_redirect(redirect_url: str) -> bool:
@@ -178,6 +178,7 @@ class OAuthLoginManager:
         self.default_endpoint = default_endpoint
         self.login_scopes = login_scopes
         self._cache = context.UserCache()
+        self._circle_cache = circles.MembersCache()
 
     def _push_context_hook(self) -> None:
         """App-wide before_request hook that pushes the auth context.
@@ -229,3 +230,69 @@ class OAuthLoginManager:
                 )
             return view(*args, **kwargs)
         return wrapped_view
+
+    def circle_member_required(self, circle: str) -> Callable:
+        """Decorator: the view requires membership in a named circle.
+
+        View-level gating over campus.api circles (the domain access
+        control): the signed-in user's ID — their email, which is also
+        their user circle's name — must be a member of `circle`
+        (e.g. "campus-admin" or a role circle "timetable.admin"). Use
+        circle_admin_required for the per-resource admin roles.
+
+        Enforcement stays in campus.api: this gate renders the right
+        UI before the API's 403 wall and must never be the only
+        protection for data.
+
+        Signed-out users redirect to sign-in (the login_required
+        behaviour, folded in so decorator stacking order never
+        matters). Signed-in non-members get 403 — they are
+        authenticated, not unknown. If the circles backend cannot
+        answer (network, API error), the view fails closed with 503
+        rather than a misleading 403; answers are cached briefly
+        (circles.MembersCache) so warm views make no upstream calls.
+        """
+        def decorator(view: Callable) -> Callable:
+            @wraps(view)
+            def wrapped_view(*args, **kwargs):
+                user = getattr(flask.g, "user", None)
+                if user is None:
+                    return flask.redirect(
+                        flask.url_for('auth.login', next=flask.request.path)
+                    )
+                user_id = getattr(user, "id", None)
+                if not user_id:
+                    flask.abort(403, description=(
+                        "Signed-in identity has no user ID; membership "
+                        f"in '{circle}' cannot be verified."
+                    ))
+                try:
+                    member = circles.is_member(
+                        self.campus, self._circle_cache, circle, user_id
+                    )
+                except circles.CirclesUnavailableError as err:
+                    flask.current_app.logger.error(
+                        "Circle membership unavailable: %s", err
+                    )
+                    flask.abort(503, description=(
+                        "Authorization backend unavailable; "
+                        "try again shortly."
+                    ))
+                if not member:
+                    flask.abort(403, description=(
+                        f"Membership in the '{circle}' circle is required."
+                    ))
+                return view(*args, **kwargs)
+            return wrapped_view
+        return decorator
+
+    def circle_admin_required(self, resource: str) -> Callable:
+        """Decorator: the view requires the <resource>.admin role.
+
+        Convenience over circle_member_required for the circles
+        bootstrap's per-resource role circles: circle_admin_required(
+        "timetable") gates on membership in the "timetable.admin"
+        circle — the same role campus.api's mutation routes enforce
+        server-side (campus/api/authz.py require_resource_admin).
+        """
+        return self.circle_member_required(f"{resource}.admin")
