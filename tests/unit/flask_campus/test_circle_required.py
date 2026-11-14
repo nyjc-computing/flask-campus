@@ -3,8 +3,8 @@
 OAuthLoginManager.circle_member_required / circle_admin_required gate
 views on membership in a named circle, resolved through the user's
 session toward campus.api. The fake client mirrors the SDK surface the
-check consumes (with_user_session → api.v1.circles); answers, not
-upstream shapes, are the contract here.
+check consumes (with_user_session → api.circles → members.get probe);
+answers, not upstream shapes, are the contract here.
 """
 
 import unittest
@@ -29,12 +29,12 @@ MEMBERS = {
 
 
 class FakeCirclesCollection:
-    """The slice of client.api.v1.circles the membership check uses."""
+    """The slice of client.api.circles the membership check uses."""
 
     def __init__(self, circles, calls):
         self._circles = circles
         self._calls = calls
-        self.members_list_calls = 0
+        self.probe_calls = 0
 
     def list(self):
         self._calls.append(("circles.list",))
@@ -44,10 +44,11 @@ class FakeCirclesCollection:
         collection = self
 
         class FakeMembers:
-            def list(self):
-                collection.members_list_calls += 1
-                collection._calls.append(("members.list", circle_id))
-                return dict(MEMBERS)
+            def get(self, member_id):
+                """The membership probe: access value, None when absent."""
+                collection.probe_calls += 1
+                collection._calls.append(("members.get", circle_id, member_id))
+                return MEMBERS.get(member_id)
 
         return SimpleNamespace(id=circle_id, members=FakeMembers())
 
@@ -75,7 +76,7 @@ class FakeCampus:
 
     @property
     def api_calls(self):
-        return self.api.circles.members_list_calls
+        return self.api.circles.probe_calls
 
 
 def make_manager(campus):
@@ -198,10 +199,10 @@ class TestCircleAdminRequired(unittest.TestCase):
         ctx = signed_in(app, user_id="teacher@campus.test")
         self.addCleanup(ctx.pop)
         # Passing IS the resolution check: only the circle named
-        # "timetable.admin" holds teacher@campus.test in the fake.
+        # "timetable.admin" holds teacher@campus.test in the fake, so
+        # a pass proves the probe ran against the role circle by name.
         self.assertEqual(view(), "ran")
-        members_lookup = campus.api.circles.members_list_calls
-        self.assertEqual(members_lookup, 1)
+        self.assertEqual(campus.api.circles.probe_calls, 1)
 
 
 class TestIsMember(unittest.TestCase):

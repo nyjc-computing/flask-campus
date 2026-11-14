@@ -138,18 +138,16 @@ def is_member(
                 )
                 answer = False
             else:
-                # TODO(authz): switch to the single-membership probe
-                # (client.api.circles[matches[0].id].members.get(
-                #     user_id)) once the campus-api-python pin carries
-                # CircleMembers.get (0.10.2) — the probe keeps client
-                # checks honest when campus.api adds access tiers or
-                # transitive resolution; members.list() is the
-                # direct-membership snapshot meanwhile.
-                members = (
-                    client.api.circles[matches[0].id]
-                    .members.list()
+                # The single-membership probe (campus#1098): the
+                # server's answer to "is this principal in this
+                # circle" — client checks keep resolving membership in
+                # exactly one place when campus.api adds access tiers
+                # or transitive resolution. 404 (absent member) is the
+                # expected negative answer; other errors surface.
+                answer = (
+                    client.api.circles[matches[0].id].members.get(user_id)
+                    is not None
                 )
-                answer = user_id in members
     except CirclesUnavailableError:
         raise
     except Exception as err:
