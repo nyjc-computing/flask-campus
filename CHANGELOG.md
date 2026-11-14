@@ -1,4 +1,15 @@
 # Changelog
+## 0.1.13 — 2026-11-14
+
+chore(deps) + probe switch: campus-api-python pin v0.10.1 -> v0.10.2
+(the membership probe client, campus-api-python#170 /
+campus#1098's GET /circles/{id}/members/{member_id}/). \`circles.is_member\`
+switches from the members.list() snapshot to the probe — the server's
+answer to "is this principal in this circle", so client checks keep
+resolving membership in exactly one place when campus.api adds access
+tiers or transitive resolution. Missing-circle denial and the 60s
+MembersCache are unchanged.
+
 ## 0.1.12 — 2026-11-14
 
 feat: circles-backed view gates — `OAuthLoginManager.circle_member_required(circle)`
