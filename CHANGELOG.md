@@ -1,4 +1,23 @@
 # Changelog
+## 0.1.12 — 2026-11-14
+
+feat: circles-backed view gates — `OAuthLoginManager.circle_member_required(circle)`
+and `circle_admin_required(resource)` (sugar for the `<resource>.admin`
+role circle). The gate answers "is the signed-in user in this circle"
+the same way campus.api's own enforcement does (user ID = email, exact
+match against the circle's members), resolved as the user via
+`with_user_session`, cached process-local per (circle, user) for 60s.
+Fail-closed: signed-out redirects to sign-in, non-members get 403, a
+missing circle denies with a warning (bootstrap problem), and a
+backend failure gets 503 — never a misleading 403, never fail-open.
+View-level gating only: campus.api stays the enforcement point.
+Mechanism note — membership currently resolves through
+`members.list()` because the pinned campus-api-python (v0.10.1)
+predates `CircleMembers.get`; switch the lookup to the probe
+(campus-api-python#170) when the pin bumps past 0.10.2. Additive
+(strict-0.x: patch bump); interface manifest unchanged — both gates
+are methods on the already-exported `OAuthLoginManager`.
+
 ## 0.1.8 — 2026-11-07
 
 Dependency rebuild: campus-api-python pin v0.8.1 -> v0.8.2 (files[id]
