@@ -1,4 +1,13 @@
 # Changelog
+## 0.1.14 — 2026-11-16
+
+Pin rebuild for the venues sweep (campus#1099, flask-campus#18):
+campus-model v0.1.7 -> v0.2.0 (documents-backed `Venue` reshape,
+campus-model#9) + campus-api-python v0.10.2 -> v0.10.3 (venues client,
+campus-api-python#171). No code changes — the pins move so shared
+lockfiles with the suite stay resolvable per the URL-pin collision
+rule.
+
 ## 0.1.13 — 2026-11-14
 
 chore(deps) + probe switch: campus-api-python pin v0.10.1 -> v0.10.2
