@@ -17,7 +17,8 @@
   ],
   "campus.audit.middleware": [
     "init_app",
-    "init_journeys"
+    "init_journeys",
+    "redact_sensitive"
   ],
   "campus.audit.client": [
     "AuditClient"

@@ -8,9 +8,24 @@ lifecycle (#828) that groups related requests into user-initiated
 episodes.
 """
 
-__all__ = ["init_app", "init_journeys"]
+__all__ = ["init_app", "init_journeys", "redact_sensitive"]
 
 import flask
+
+
+def __getattr__(name: str):
+    """Lazily expose ``redact_sensitive`` (flask-campus#20).
+
+    The producer-side scrub primitive is public interface — the audit
+    service and the retroactive scrub script on campus reuse the same
+    key list, so keyed redaction cannot drift between writer and
+    scrubber. The lazy import mirrors init_app: tracing loads at
+    middleware-setup time, not package-import time.
+    """
+    if name == "redact_sensitive":
+        from .tracing import redact_sensitive
+        return redact_sensitive
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 def init_app(app: flask.Flask) -> None:
