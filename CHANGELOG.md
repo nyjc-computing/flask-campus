@@ -1,4 +1,11 @@
 # Changelog
+## 0.1.17 — 2026-11-17
+
+Pin rebuild per the collision rule: campus-model v0.2.2 → v0.2.3
+(APIKey trace-read scoping binds, campus#944 / campus-model#13) +
+campus-api-python v0.10.5 → v0.10.6 (trace-read bind mint params,
+same wave). No code changes.
+
 ## 0.1.16 — 2026-11-17
 
 Pin rebuild per the collision rule: campus-common v0.5.0
