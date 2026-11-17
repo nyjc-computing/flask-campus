@@ -1,4 +1,10 @@
 # Changelog
+## 0.1.16 — 2026-11-17
+
+Pin rebuild per the collision rule: campus-common v0.5.0
+(from_exception static-message fix, campus#1128) + campus-api-python v0.10.5
++ campus-model v0.2.2 (rebuilds of the same bump). No code changes.
+
 ## 0.1.15 — 2026-11-17
 
 Policy sweep for the producer-side redaction surface
