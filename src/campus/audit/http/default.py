@@ -191,13 +191,21 @@ class DefaultClient(JsonClient):
             )
             logger.debug(f"HTTP {method} {url} -> {response.status_code}")
             
-            # Log response details for error cases
+            # Log response details for error cases. The warning carries
+            # status and size only — a 4xx validation body can echo
+            # offending span content (emails, redaction leftovers), and
+            # Railway stdout is a shared surface (flask-campus#20, policy
+            # §3). The body goes to DEBUG, below the default level.
             if response.status_code >= 400:
-                try:
-                    response_text = response.text[:500]  # Limit to avoid huge logs
-                    logger.warning(f"HTTP {method} {url} failed ({response.status_code}): {response_text}")
-                except Exception:
-                    logger.warning(f"HTTP {method} {url} failed ({response.status_code}): <unable to read response>")
+                logger.warning(
+                    "HTTP %s %s failed (%s, %s bytes)",
+                    method, url, response.status_code,
+                    response.headers.get("Content-Length", "?"),
+                )
+                logger.debug(
+                    "HTTP %s %s error body: %s",
+                    method, url, response.text[:500],
+                )
                     
         except requests.RequestException as e:
             logger.error(f"HTTP {method} {url} network error: {e}")

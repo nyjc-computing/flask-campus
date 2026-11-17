@@ -501,12 +501,30 @@ def _identity_id(value: typing.Any) -> str | None:
 # case-insensitively with dashes normalized to underscores; the suffixes
 # catch variants (google_refresh_token, db_password, ...) without widening
 # to bare "_key"/"_code", which carry usable non-secret data.
+#
+# Flow secrets added for the policy sweep (campus#1131, flask-campus#20):
+# authorization_code / otp / user_code are bearer-equivalent while their
+# flow is live (an OAuth code or a pending device/user code exchanges
+# for a session), and bare "name" keys carry person names — policy §3
+# scrubs PII as well as secrets. Bare "_code"/"_key" stays deferred to
+# #806 (sensitive-data marking).
 SENSITIVE_KEYS = frozenset({
-    "access_token", "api_key", "authorization", "client_secret",
-    "cookie", "device_code", "id_token", "passwd", "password",
-    "refresh_token", "secret", "set_cookie", "token",
+    "access_token", "api_key", "authorization", "authorization_code",
+    "client_secret", "cookie", "device_code", "family_name", "full_name",
+    "given_name", "id_token", "name", "otp", "passwd", "password",
+    "refresh_token", "secret", "set_cookie", "token", "user_code",
 })
 _SENSITIVE_SUFFIXES = ("_secret", "_password", "_api_key", "_token")
+
+# Email addresses are PII with one carve-out: college-issued identity
+# identifiers are not PII (ruling on campus#1125, 2026-11-17), so an
+# @nyjc.edu.sg address stays readable — students debugging their own
+# traces need to recognize their identity, and user_id IS that address.
+# Email values under any other domain get masked (PII_EMAIL_KEYS below);
+# values that are not recognizable addresses are treated conservatively.
+WORKSPACE_EMAIL_DOMAIN = "nyjc.edu.sg"
+_PII_EMAIL_KEYS = frozenset({"email"})
+_PII_EMAIL_SUFFIX = "_email"
 
 _REDACTED = "[REDACTED]"
 
@@ -521,16 +539,53 @@ def _is_sensitive_key(key: typing.Any) -> bool:
     )
 
 
+def _is_pii_email_key(key: typing.Any) -> bool:
+    return (
+        isinstance(key, str)
+        and (
+            key.lower().replace("-", "_") in _PII_EMAIL_KEYS
+            or key.lower().replace("-", "_").endswith(_PII_EMAIL_SUFFIX)
+        )
+    )
+
+
+def _is_workspace_email(value: typing.Any) -> bool:
+    """True for an address under the college workspace domain.
+
+    Anything that is not a recognizable address under (a subdomain of)
+    WORKSPACE_EMAIL_DOMAIN is treated as PII — including non-string
+    and malformed values.
+    """
+    if not isinstance(value, str) or "@" not in value:
+        return False
+    domain = value.rsplit("@", 1)[1].lower()
+    return (
+        domain == WORKSPACE_EMAIL_DOMAIN
+        or domain.endswith("." + WORKSPACE_EMAIL_DOMAIN)
+    )
+
+
 def redact_sensitive(value: typing.Any) -> typing.Any:
     """Mask values stored under sensitive keys, recursively (#805).
 
     Keyed redaction only: scalars and free-text bodies pass through
     unchanged — text scrubbing needs sensitive-data marking (#806).
+    Email keys are value-aware: workspace-domain addresses pass through
+    (campus#1125 ruling), everything else under them is masked.
     Returns a new structure; the input is not mutated.
     """
     if isinstance(value, dict):
         return {
-            key: _REDACTED if _is_sensitive_key(key) else redact_sensitive(item)
+            key: (
+                _REDACTED
+                if _is_sensitive_key(key)
+                else (
+                    _REDACTED
+                    if _is_pii_email_key(key)
+                    and not _is_workspace_email(item)
+                    else redact_sensitive(item)
+                )
+            )
             for key, item in value.items()
         }
     if isinstance(value, list):

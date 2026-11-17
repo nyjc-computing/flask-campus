@@ -44,6 +44,7 @@ __all__ = [
     "ACTION_JOURNEY_NAME_HEADER",
 ]
 
+import re
 import typing
 
 import flask
@@ -69,12 +70,21 @@ from . import tracing
 # header would bloat every span tag stored for the journey.
 _JOURNEY_NAME_MAX_LEN = 120
 
+# Header-supplied names are client-forgeable free text that lands
+# verbatim in span tags, so anything outside this safe display set is
+# dropped: free text cannot smuggle PII (emails, names) or markup into
+# the stored trail (flask-campus#20). @journey-decorated views supply
+# their names in code, following the emission-label convention (#840),
+# and don't pass through here.
+_JOURNEY_NAME_UNSAFE = re.compile(r"[^A-Za-z0-9 _.-]")
+
 
 def _clean_journey_name(raw: typing.Optional[str]) -> typing.Optional[str]:
-    """Strip and length-cap a header-supplied journey name."""
+    """Strip, length-cap, and character-filter a header-supplied name."""
     if not raw:
         return None
-    return raw.strip()[:_JOURNEY_NAME_MAX_LEN] or None
+    safe = _JOURNEY_NAME_UNSAFE.sub("", raw.strip())
+    return safe[:_JOURNEY_NAME_MAX_LEN] or None
 
 
 def _is_navigation() -> bool:

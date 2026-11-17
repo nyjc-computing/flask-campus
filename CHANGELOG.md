@@ -1,4 +1,36 @@
 # Changelog
+## 0.1.15 — 2026-11-17
+
+Policy sweep for the producer-side redaction surface
+(flask-campus#20; environment-access-policy 2026-11-17 §3 — campus.audit
+records scrub all PII and sensitive secrets; deviations tracker
+campus#1131).
+
+- `redact_sensitive` extended: `authorization_code`, `otp`, and
+  `user_code` (bearer-equivalent while their flow is live) join the
+  sensitive-key set; person names (`name`, `full_name`, `given_name`,
+  `family_name`) are redacted as PII; email keys (`email`, `*_email`)
+  are value-aware — workspace-domain addresses pass through
+  (college-issued identifiers are not PII, campus#1125 ruling) and
+  everything else under them is masked, failing closed on malformed
+  values. Bare `_code`/`_key` stays deferred to #806.
+- Header-supplied journey names (`X-Journey-Name`) are character-filtered
+  to a safe display set before landing in span tags — they are
+  client-forgeable free text and could smuggle PII/markup into the
+  stored trail.
+- The audit HTTP client's ingestion-failure warning now logs status and
+  content-length only; the response body (which can echo offending span
+  content) moved to DEBUG, below the default level.
+- `redact_sensitive` is re-exported as public interface of
+  `campus.audit.middleware` (interface manifest regenerated): the audit
+  service and the retroactive scrub script on campus reuse the same key
+  list, so keyed redaction cannot drift between writer and scrubber.
+- New redaction unit tests in-repo (`tests/unit/audit/test_redaction.py`)
+  so a silent key-list regression fails here, not only downstream.
+- Pin rebuild per the collision rule: campus-common v0.4.0 (error-surface
+  scrubs, campus-common#8) + campus-api-python v0.10.4 + campus-model
+  v0.2.1 (rebuilds of the same bump).
+
 ## 0.1.14 — 2026-11-16
 
 Pin rebuild for the venues sweep (campus#1099, flask-campus#18):
