@@ -1,4 +1,11 @@
 # Changelog
+## 0.1.18 — 2026-11-17
+
+`ApiKeys.new()` gains `trace_user_id`/`trace_client_id` bind params
+(campus#944): opaque trace-read scoping values the audit service
+enforces server-side; required server-side for read-scoped mints,
+omitted = unscoped. The admin portal's key-mint UI passes these
+through from its form (campus-admin). Binds are mint-time only.
 ## 0.1.17 — 2026-11-17
 
 Pin rebuild per the collision rule: campus-model v0.2.2 → v0.2.3
