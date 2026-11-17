@@ -71,12 +71,22 @@ class ApiKeys(ResourceCollection):
         role: str | None = None,
         rate_limit: int | None = None,
         expires_at: str | None = None,
+        trace_user_id: str | None = None,
+        trace_client_id: str | None = None,
     ) -> JsonResponse:
         """Mint a new API key.
 
         Give either a role (a named scope bundle) or a raw scope list,
         not both. The plaintext appears once, in the response's
         ``api_key`` field, and is never stored server-side.
+
+        Trace-read scoping (#944): pass ``trace_user_id`` and/or
+        ``trace_client_id`` to bind the key's trace reads to those
+        opaque match-values — the service enforces them server-side on
+        every read surface and refuses (422) a mint that grants trace
+        reads without apikeys:write/traces:write unless at least one
+        bind is present. Binds are mint-time only; update() does not
+        accept them.
 
         Returns:
             Response with the key record plus the plaintext.
@@ -93,6 +103,10 @@ class ApiKeys(ResourceCollection):
             body["rate_limit"] = rate_limit
         if expires_at is not None:
             body["expires_at"] = expires_at
+        if trace_user_id is not None:
+            body["trace_user_id"] = trace_user_id
+        if trace_client_id is not None:
+            body["trace_client_id"] = trace_client_id
         response = self.client.post(self.make_path(), json=body)
         response.raise_for_status()
         return response

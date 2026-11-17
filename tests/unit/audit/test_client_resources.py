@@ -157,6 +157,25 @@ class TestApiKeysClient(unittest.TestCase):
             "expires_at": "2027-01-01T00:00:00+00:00",
         })
 
+    def test_new_forwards_trace_binds(self):
+        """Bind params (#944) ride the mint body; omitted = absent."""
+        client, recorder = _client_with_recorder()
+        client.apikeys.new(
+            name="k",
+            owner_id="o",
+            role="traces-viewer",
+            trace_user_id="student@nyjc.edu.sg",
+            trace_client_id="uid-client-abc",
+        )
+        _, _, _, body = recorder.calls[0]
+        self.assertEqual(body, {
+            "name": "k",
+            "owner_id": "o",
+            "role": "traces-viewer",
+            "trace_user_id": "student@nyjc.edu.sg",
+            "trace_client_id": "uid-client-abc",
+        })
+
     def test_list_params(self):
         client, recorder = _client_with_recorder()
         client.apikeys.list()
