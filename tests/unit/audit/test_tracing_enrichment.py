@@ -10,8 +10,7 @@ from unittest import mock
 
 import flask
 
-from campus.audit.middleware import init_app
-from campus.audit.middleware import tracing
+from campus.audit.middleware import init_app, tracing
 
 
 class SpanCaptureTestCase(unittest.TestCase):
