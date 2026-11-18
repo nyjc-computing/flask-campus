@@ -43,6 +43,7 @@ def init_app(app: flask.Flask) -> None:
     from . import tracing
 
     _install_propagation()
+    tracing.install_warning_collector()
 
     @app.before_request
     def audit_rate_gate():

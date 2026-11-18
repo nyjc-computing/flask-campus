@@ -200,19 +200,83 @@ def _get_audit_client() -> AuditClient:
 
 
 def is_static_request() -> bool:
-    """True for static-asset requests that are never worth a span (#818).
+    """True for static-asset requests (#818).
 
-    Static requests can never gain child spans — flask_campus's
-    push_context already skips static endpoints (#689), so no SDK calls
-    fire from them — they would only flood the traces list with 1-span
-    rows. ``/favicon.ico`` has no route (endpoint None), so it needs a
-    path check. HTML page loads are NOT static: they stay traced as the
-    waterfall roots that give page-fired SDK calls parentage (#816).
+    Without capture enabled (see include_static_requests) these are
+    never worth a span: they can never gain child spans —
+    flask_campus's push_context already skips static endpoints (#689),
+    so no SDK calls fire from them — and they would only flood the
+    traces list with 1-span rows. ``/favicon.ico`` has no route
+    (endpoint None), so it needs a path check. HTML page loads are NOT
+    static: they stay traced as the waterfall roots that give
+    page-fired SDK calls parentage (#816).
     """
     endpoint = flask.request.endpoint or ""
     if endpoint == "static" or endpoint.endswith(".static"):
         return True
     return flask.request.path == "/favicon.ico"
+
+
+def include_static_requests() -> bool:
+    """Whether static-asset requests get spans (flask-campus#26).
+
+    Off by default — #818's flood concern stands while nothing filters
+    them client-side. Deployments that want the page-asset picture for
+    incident triage (what loaded, from where, how big) set
+    ``AUDIT_TRACING_INCLUDE_STATIC=1``; captured static spans carry
+    ``tags.request_kind = "static"`` and skip body capture, so viewers
+    can fold them away instead of the producer discarding them.
+    """
+    from campus.common import env
+
+    return env.get("AUDIT_TRACING_INCLUDE_STATIC") == "1"
+
+
+# Cap the WARNING+ records collected per request so a chatty view
+# can't balloon the span payload (flask-campus#26).
+_MAX_COLLECTED_WARNINGS = 10
+_MAX_WARNING_MESSAGE_CHARS = 500
+
+
+class RequestWarningCollector(logging.Handler):
+    """Collect WARNING+ log records emitted during the current request.
+
+    Registered on the root logger at init_app (idempotent). Records
+    emitted outside a request context — the span-ingest executor
+    thread, startup code — are ignored. ``end_span`` attaches the
+    collected records to the span as ``tags.warnings`` (redacted,
+    capped) so incident triage sees the app's own warnings without
+    needing Railway stdout; tracebacks stay stripped in prod, the
+    formatted message rides along instead (flask-campus#26).
+    """
+
+    def emit(self, record: logging.LogRecord) -> None:
+        try:
+            if record.levelno < logging.WARNING:
+                return
+            if not flask.has_request_context():
+                return
+            buf = getattr(flask.g, "_trace_warnings", None)
+            if buf is None:
+                buf = []
+                flask.g._trace_warnings = buf
+            if len(buf) >= _MAX_COLLECTED_WARNINGS:
+                return
+            buf.append({
+                "level": record.levelname,
+                "logger": record.name,
+                "message": record.getMessage()[:_MAX_WARNING_MESSAGE_CHARS],
+            })
+        except Exception:
+            self.handleError(record)
+
+
+def install_warning_collector() -> None:
+    """Attach the request warning collector to the root logger once."""
+    root = logging.getLogger()
+    if not any(isinstance(handler, RequestWarningCollector)
+               for handler in root.handlers):
+        root.addHandler(RequestWarningCollector())
 
 
 def check_rate_gate() -> flask.Response | None:
@@ -296,8 +360,11 @@ def start_span() -> None:
     - Generates span_id for this request
     - Stores timing data in flask.g
 
-    Static-asset requests (#818) are skipped entirely: no state is
-    stored, so the paired end_span() call becomes a no-op.
+    Static-asset requests (#818) are skipped entirely unless capture
+    is enabled (include_static_requests): no state is stored, so the
+    paired end_span() call becomes a no-op. When captured, the request
+    is flagged via flask.g.trace_static so the span is tagged
+    ``request_kind: static`` and skips body extraction (#26).
 
     Stores in flask.g:
         - trace_id: 32-char hex trace identifier
@@ -305,8 +372,10 @@ def start_span() -> None:
         - parent_span_id: caller's span id, or None for root spans
         - trace_start: perf_counter timestamp for duration calculation
         - trace_started_at: wall-clock DateTime for the span's started_at
+        - trace_static: True for a captured static-asset request (#26)
     """
-    if is_static_request():
+    is_static = is_static_request()
+    if is_static and not include_static_requests():
         return
 
     # Get or generate trace_id from X-Request-ID header
@@ -323,6 +392,7 @@ def start_span() -> None:
     # Wall-clock start: recorded here so the span's started_at reflects
     # when the request arrived, not when the span was ingested (#794).
     flask.g.trace_started_at = schema.DateTime.utcnow()
+    flask.g.trace_static = is_static
 
 
 def end_span(response: flask.Response) -> flask.Response:
@@ -385,17 +455,26 @@ def build_span_from_context(
         Dictionary representation of the span for ingestion.
     """
     request = flask.request
+    is_static = bool(getattr(flask.g, "trace_static", False))
 
     # Extract headers (strip Authorization)
     headers = dict(request.headers)
     headers.pop("Authorization", None)
     headers.pop("authorization", None)  # Case-insensitive
 
-    # Get request body (only for supported content types)
-    request_body = _extract_request_body(request)
+    # Captured static assets are binary noise for body capture —
+    # headers, status and timing are the useful part (#26).
+    request_body = None if is_static else _extract_request_body(request)
 
     # Get response body (truncated to 64KB)
-    response_body = _extract_response_body(response)
+    response_body = None if is_static else _extract_response_body(response)
+
+    # WARNING+ records collected during this request by the root-logger
+    # RequestWarningCollector (flask-campus#26). Absent stays absent —
+    # don't put an empty list on every span.
+    request_warnings = redact_sensitive(
+        getattr(flask.g, "_trace_warnings", None) or None
+    )
 
     # Span start: wall-clock time captured in start_span (before_request),
     # not the ingestion time — waterfall offsets depend on it (#794).
@@ -455,13 +534,17 @@ def build_span_from_context(
         "error_message": None,  # No error for successful requests
         # Journey/device tags when the request belongs to a login
         # journey (#803), an identified device (#825), or a named
-        # action journey (#828)
+        # action journey (#828); request_kind marks a captured
+        # static-asset span (#26); warnings carries the request's
+        # collected WARNING+ log records (#26)
         "tags": {
             key: value
             for key, value in (
                 ("journey_id", journey_id),
                 ("journey_name", journey_name),
                 ("device_id", device_id),
+                ("request_kind", "static" if is_static else None),
+                ("warnings", request_warnings),
             )
             if value
         },
