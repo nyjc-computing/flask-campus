@@ -156,6 +156,17 @@ class UserCache:
             self._entries.pop((kind, session_id), None)
 
 
+def _forget(cache: UserCache, kind: str, session_id: str | None) -> None:
+    """Drop a lane's cached user and the browser's session reference.
+
+    The reference must go: a cookie pointing at a session the app can
+    no longer resolve would otherwise re-fail on every request.
+    """
+    cache.pop(kind, session_id)
+    key = SESSION_STORAGE_KEY if kind == LANE_SESSION else LOGIN_STORAGE_KEY
+    flask.session.pop(key, None)
+
+
 def push_context(campus: campus_python.Campus, cache: UserCache) -> None:
     """Push auth/login context to flask.g (the SDK push_context port).
 
@@ -163,6 +174,14 @@ def push_context(campus: campus_python.Campus, cache: UserCache) -> None:
     warm requests make zero upstream calls. Trade-off: a session
     revoked server-side — not through logout(), which evicts
     immediately — keeps resolving for up to the TTL window.
+
+    Resolution failures degrade to anonymous (#28): a cookie whose
+    session/login cannot be resolved — gone (404), denied (#854
+    owning-client checks), or unreachable (gateway 502, malformed
+    response) — must never propagate out of this app-wide hook, or
+    the browser is bricked on every route including /logout. The
+    reference is dropped and the request flows to the app's auth
+    gate, which redirects to login.
     """
     flask.g.user = None
     flask.g.device = None
@@ -188,9 +207,13 @@ def push_context(campus: campus_python.Campus, cache: UserCache) -> None:
                 cache.put(LANE_SESSION, session_id, user, None)
         except campus_python.errors.NotFoundError:
             # Session no longer exists on server (expired, restart, etc.)
-            cache.pop(LANE_SESSION, session_id)
-            # Clear the stale session reference from the browser.
-            flask.session.pop(SESSION_STORAGE_KEY, None)
+            _forget(cache, LANE_SESSION, session_id)
+        except Exception as exc:
+            logger.warning(
+                f"Auth session resolution failed ({session_id}): "
+                f"{type(exc).__name__}: {exc}"
+            )
+            _forget(cache, LANE_SESSION, session_id)
 
     # Try to load login session if one exists
     elif campus.auth.logins.has_session():
@@ -214,8 +237,13 @@ def push_context(campus: campus_python.Campus, cache: UserCache) -> None:
                 )
         except campus_python.errors.NotFoundError:
             # Login session no longer exists on server
-            cache.pop(LANE_LOGIN, login_id)
-            flask.session.pop(LOGIN_STORAGE_KEY, None)
+            _forget(cache, LANE_LOGIN, login_id)
+        except Exception as exc:
+            logger.warning(
+                f"Login session resolution failed ({login_id}): "
+                f"{type(exc).__name__}: {exc}"
+            )
+            _forget(cache, LANE_LOGIN, login_id)
 
 
 def start_login(

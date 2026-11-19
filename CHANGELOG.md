@@ -1,4 +1,16 @@
 # Changelog
+## 0.1.21 — 2026-11-19
+
+`push_context` degrades ANY session/login resolution failure to
+anonymous (flask-campus#28): a cookie whose session is gone (404),
+denied (#854 owning-client checks), or unreachable (gateway 502 ->
+MalformedResponseError) now pops the stale reference and continues as
+logged-out, so the app's auth gate redirects to login. Previously only
+404 was handled; any other error propagated out of the app-wide
+before_request hook and 500'd every route — including /logout —
+bricking the browser until the cookie was manually cleared (2026-11-19
+dev incident: a gateway outage locked out every signed-in browser).
+
 ## 0.1.18 — 2026-11-17
 
 `ApiKeys.new()` gains `trace_user_id`/`trace_client_id` bind params
