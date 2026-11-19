@@ -3,6 +3,7 @@
 Common utility functions for validation of flask requests and responses.
 """
 
+from . import audit
 from .journeys import journey
 from .login_manager import OAuthLoginManager
 from .types import (
@@ -23,6 +24,7 @@ from .utils import (
 )
 
 __all__ = [
+    "audit",
     "HtmlResponse",
     "JsonResponse",
     "JsonViewFunction",

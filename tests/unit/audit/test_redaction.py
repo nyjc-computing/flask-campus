@@ -13,8 +13,8 @@ downstream.
 import unittest
 from unittest import mock
 
-from campus.audit.middleware import redact_sensitive
-from campus.audit.middleware.journeys import _clean_journey_name
+from campus.flask_campus.audit import redact_sensitive
+from campus.flask_campus.audit.journeys import _clean_journey_name
 
 
 class TestFlowSecretRedaction(unittest.TestCase):
@@ -147,9 +147,9 @@ class TestRedactionInvariants(unittest.TestCase):
 
     def test_reexport_from_package(self):
         """The scrub primitive is the shared cross-dist API (#20)."""
-        from campus.audit import middleware
+        from campus.flask_campus import audit
 
-        self.assertIs(middleware.redact_sensitive, redact_sensitive)
+        self.assertIs(audit.redact_sensitive, redact_sensitive)
 
 
 class TestJourneyNameSanitization(unittest.TestCase):
@@ -187,7 +187,7 @@ class TestIngestionWarningScrub(unittest.TestCase):
     """4xx ingestion failures log status/size, not the response body."""
 
     def _make_client(self, status, body):
-        from campus.audit.http.default import DefaultClient
+        from campus_python.audit.http.default import DefaultClient
 
         response = mock.Mock()
         response.status_code = status
@@ -205,7 +205,7 @@ class TestIngestionWarningScrub(unittest.TestCase):
         client = self._make_client(
             422, '{"error":{"message":"invalid span: otp=123456"}}'
         )
-        with self.assertLogs("campus.audit.http.default",
+        with self.assertLogs("campus_python.audit.http.default",
                              level="WARNING") as captured:
             client._make_request("POST", "/traces/", json={"x": 1})
         warnings = [line for line in captured.output
@@ -219,7 +219,7 @@ class TestIngestionWarningScrub(unittest.TestCase):
         client = self._make_client(
             422, '{"error":{"message":"invalid span: otp=123456"}}'
         )
-        with self.assertLogs("campus.audit.http.default",
+        with self.assertLogs("campus_python.audit.http.default",
                              level="DEBUG") as captured:
             client._make_request("POST", "/traces/", json={"x": 1})
         joined = "\n".join(captured.output)

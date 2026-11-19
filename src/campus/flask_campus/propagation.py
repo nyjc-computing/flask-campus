@@ -9,14 +9,14 @@ headers stashed on flask.g by the audit middleware, so the receiving
 campus service records them as child spans of the caller's span
 (#794, campus#816).
 
-campus.audit.middleware.init_app / init_journeys install the provider
+campus.flask_campus.audit.init_tracing / init_journeys install the provider
 (one process-global seam, idempotent); without it the SDK falls back
 to its own built-in flask reader. The provider returns None outside
 any request context — the SDK then applies the process boot journey
 (#114), so startup/background SDK calls stay correlated.
 
 Header names mirror campus_python.tracing and
-campus.audit.middleware.tracing — keep all three in lockstep (W3C
+campus.flask_campus.audit.tracing — keep all three in lockstep (W3C
 traceparent interop would extend all of them); their long-term home
 is the campus.common protocol-constant set (#980).
 """
@@ -84,7 +84,7 @@ def request_context_headers() -> dict[str, str] | None:
 def install() -> None:
     """Install the provider into campus_python.tracing (idempotent).
 
-    Called by campus.audit.middleware.init_app / init_journeys; hosts
+    Called by campus.flask_campus.audit.init_tracing / init_journeys; hosts
     without the audit middleware keep the SDK's built-in reader.
     """
     tracing.set_request_context_provider(request_context_headers)

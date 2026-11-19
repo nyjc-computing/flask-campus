@@ -5,6 +5,7 @@
     "JsonViewFunction",
     "OAuthLoginManager",
     "ViewFunctionDecorator",
+    "audit",
     "get_request_headers",
     "get_request_payload",
     "get_user_agent",
@@ -15,27 +16,9 @@
     "validate_request_and_extract_json",
     "validate_request_and_extract_urlparams"
   ],
-  "campus.audit.middleware": [
-    "init_app",
+  "campus.flask_campus.audit": [
     "init_journeys",
+    "init_tracing",
     "redact_sensitive"
-  ],
-  "campus.audit.client": [
-    "AuditClient"
-  ],
-  "campus.audit.http": [
-    "AccessDeniedError",
-    "AuthenticationError",
-    "ConflictError",
-    "DefaultClient",
-    "DefaultResponse",
-    "HttpClientError",
-    "InvalidRequestError",
-    "JsonClient",
-    "JsonResponse",
-    "MalformedResponseError",
-    "NetworkError",
-    "NotFoundError",
-    "get_client"
   ]
 }
