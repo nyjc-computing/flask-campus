@@ -1,4 +1,4 @@
-"""campus.audit.middleware.tracing
+"""campus.flask_campus.audit.tracing
 
 Tracing middleware implementation for capturing HTTP request-response spans.
 """
@@ -11,8 +11,8 @@ import typing
 
 import flask
 import requests
+from campus_python.audit import AuditClient
 
-from campus.audit.client import AuditClient
 from campus.common import protocol, schema
 from campus.common.protocol import PARENT_SPAN_ID_HEADER, TRACE_ID_HEADER
 from campus.common.utils import uid

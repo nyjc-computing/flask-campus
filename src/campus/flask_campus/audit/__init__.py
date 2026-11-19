@@ -1,14 +1,24 @@
-"""campus.audit.middleware
+"""campus.flask_campus.audit
 
-Request tracing middleware for Campus audit API.
+Audit middleware for Flask-based Campus apps: automatic span capture
+for HTTP requests and the action-journey lifecycle (#828) that groups
+related requests into user-initiated episodes.
 
-This module provides automatic span capture for HTTP requests flowing
-through campus.auth and campus.api deployments, and the action-journey
-lifecycle (#828) that groups related requests into user-initiated
-episodes.
+Moved from campus.audit.middleware (flask-campus#31): the middleware is
+request-scoped Flask glue, so it lives in the flask_campus layer, while
+its HTTP client (span ingest, trace queries, API keys) ships with the
+SDK as campus_python.audit.
+
+Span capture is opt-in per deployment: call init_tracing only when
+AUDIT_TRACING_ENABLED and AUDIT_API_KEY are configured. Journey
+adoption/minting is cheap request-scoped plumbing and stays always-on
+(recording is a no-op when tracing is off).
+
+Note: init_tracing should only be called for Flask deployments that are
+not the audit service itself (to avoid infinite recursion).
 """
 
-__all__ = ["init_app", "init_journeys", "redact_sensitive"]
+__all__ = ["init_tracing", "init_journeys", "redact_sensitive"]
 
 import flask
 
@@ -19,7 +29,7 @@ def __getattr__(name: str):
     The producer-side scrub primitive is public interface — the audit
     service and the retroactive scrub script on campus reuse the same
     key list, so keyed redaction cannot drift between writer and
-    scrubber. The lazy import mirrors init_app: tracing loads at
+    scrubber. The lazy import mirrors init_tracing: tracing loads at
     middleware-setup time, not package-import time.
     """
     if name == "redact_sensitive":
@@ -28,7 +38,7 @@ def __getattr__(name: str):
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
-def init_app(app: flask.Flask) -> None:
+def init_tracing(app: flask.Flask) -> None:
     """Initialize tracing middleware for the Flask app.
 
     Registers before_request and after_request hooks to capture

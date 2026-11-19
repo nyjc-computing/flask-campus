@@ -1,4 +1,4 @@
-"""campus.audit.middleware.journeys
+"""campus.flask_campus.audit.journeys
 
 Action-journey lifecycle (#828).
 

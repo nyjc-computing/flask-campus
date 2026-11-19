@@ -1,5 +1,30 @@
 # Changelog
+## 0.2.0 — 2026-11-19
+
+**BREAKING** — audit namespace reorg (flask-campus#31, unfreezes the
+campus#970/#993 import-path freeze):
+
+- The dist no longer ships any `campus.audit.*` portion. The middleware
+  moved to `campus.flask_campus.audit` and its HTTP client moved to the
+  SDK as `campus_python.audit` (one owner per import prefix;
+  `campus.audit` is now campus-suite's service alone).
+- `init_app` renamed `init_tracing`. Consumer setup becomes:
+
+  ```python
+  from campus.flask_campus import audit
+  audit.init_journeys(app)
+  if env.get_flag("AUDIT_TRACING_ENABLED", False):
+      audit.init_tracing(app)
+  ```
+
+- Roles catalogue (`campus.audit.roles`) → `campus_python.audit.roles`;
+  `AuditClient`/`campus.audit.http` → `campus_python.audit` /
+  `campus_python.audit.http` (campus-api-python v0.10.9).
+- flask_campus README: fixed the stale "apps install campus-suite"
+  line (post-#993 apps pin flask-campus, never the suite).
+
 ## 0.1.21 — 2026-11-19
+
 
 `push_context` degrades ANY session/login resolution failure to
 anonymous (flask-campus#28): a cookie whose session is gone (404),

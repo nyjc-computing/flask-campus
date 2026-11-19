@@ -141,7 +141,7 @@ keys themselves — the SDK's resource methods also accept explicit
 
 ### Trace propagation
 
-`campus.audit.middleware.init_app` / `init_journeys` install
+`campus.flask_campus.audit.init_tracing` / `init_journeys` install
 `campus.flask_campus.propagation` as the SDK's request-context
 provider (`campus_python.tracing.set_request_context_provider`):
 outbound SDK calls made while your app handles a request then carry

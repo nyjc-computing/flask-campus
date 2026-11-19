@@ -10,7 +10,7 @@ from unittest import mock
 
 import flask
 
-from campus.audit.middleware import init_app, tracing
+from campus.flask_campus.audit import init_tracing, tracing
 
 
 class SpanCaptureTestCase(unittest.TestCase):
@@ -33,14 +33,14 @@ class SpanCaptureTestCase(unittest.TestCase):
             return flask.jsonify({"ok": True})
 
         self.captured = []
-        # Patch before init_app: init_app itself doesn't ingest, but keep
+        # Patch before init_tracing: init_tracing itself doesn't ingest, but keep
         # the sink in place for whatever fires.
         patcher = mock.patch.object(tracing, "_ingest_span_async",
                                      side_effect=self.captured.append)
         patcher.start()
         self.addCleanup(patcher.stop)
 
-        init_app(self.app)
+        init_tracing(self.app)
         self.client = self.app.test_client()
 
     def tearDown(self):
@@ -152,7 +152,7 @@ class TestWarningCapture(SpanCaptureTestCase):
 
     def test_install_warning_collector_idempotent(self):
         root = logging.getLogger()
-        # setUp's init_app already installed one; re-installing must not add more.
+        # setUp's init_tracing already installed one; re-installing must not add more.
         before = len([h for h in root.handlers
                       if isinstance(h, tracing.RequestWarningCollector)])
         self.assertGreaterEqual(before, 1)

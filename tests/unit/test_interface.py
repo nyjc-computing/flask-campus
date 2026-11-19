@@ -3,9 +3,8 @@
 The public interface of this dist is the set of package ``__all__``s:
 
 - campus.flask_campus        (request/response glue, login/session context)
-- campus.audit.middleware    (tracing/journeys/identity middleware)
-- campus.audit.client        (AuditClient, the caller-side audit API)
-- campus.audit.http          (the HTTP client seam the middleware speaks through)
+- campus.flask_campus.audit  (tracing/journeys middleware; the caller-side
+  audit API itself ships with the SDK as campus_python.audit)
 
 Declared names must actually import; underscore-prefixed names are
 private by convention. The manifest (tests/interface_manifest.json) is
@@ -26,9 +25,7 @@ import unittest
 
 PACKAGES = [
     "campus.flask_campus",
-    "campus.audit.middleware",
-    "campus.audit.client",
-    "campus.audit.http",
+    "campus.flask_campus.audit",
 ]
 
 MANIFEST = pathlib.Path(__file__).resolve().parents[1] / "interface_manifest.json"

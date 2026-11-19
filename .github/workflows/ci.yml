@@ -91,11 +91,12 @@ jobs:
       - name: Audit namespace packaging
         run: poetry run python scripts/audit_wheel_namespace.py
       # The install-surface smoke: prove the built wheel (not the src tree)
-      # is installable and all four portions import from it. pip resolves
-      # campus-common/campus-model and campus-api-python from the URLs
-      # baked into the wheel metadata.
+      # is installable and its portions import from it, and that the
+      # audit middleware's SDK client (campus_python.audit) resolves —
+      # pip pulls campus-common/campus-model and campus-api-python from
+      # the URLs baked into the wheel metadata.
       - name: Fresh-venv wheel smoke
         run: |
           python -m venv smoke-venv
           smoke-venv/bin/pip install --quiet dist/flask_campus-*.whl
-          smoke-venv/bin/python -c "import campus.flask_campus, campus.audit.middleware, campus.audit.client, campus.audit.http, campus.common.protocol; print('smoke OK:', campus.flask_campus.__file__)"
+          smoke-venv/bin/python -c "import campus.flask_campus, campus.flask_campus.audit, campus_python.audit, campus.common.protocol; print('smoke OK:', campus.flask_campus.__file__)"
