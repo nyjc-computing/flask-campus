@@ -147,6 +147,54 @@ class TestPushContext(unittest.TestCase):
             self.assertIsNone(flask.g.user)
             self.assertNotIn(SESSION_STORAGE_KEY, flask.session)
 
+    def test_non404_auth_session_failure_degrades_to_anonymous(self):
+        # A non-404 failure (gateway 502 -> MalformedResponseError,
+        # authz denial, ...) must degrade to anonymous, never propagate
+        # out of the app-wide hook: a raising hook 500s every route,
+        # including /logout, and bricks the browser (#28).
+        self.auth.sessions.has_session.return_value = True
+        self.auth.sessions.from_session.side_effect = (
+            campus_python.errors.MalformedResponseError()
+        )
+        with request_context() as _ctx:
+            flask.session[SESSION_STORAGE_KEY] = "sess-502"
+            context.push_context(self.campus, self.cache)
+            self.assertIsNone(flask.g.user)
+            self.assertIsNone(flask.g.device)
+            self.assertNotIn(SESSION_STORAGE_KEY, flask.session)
+
+    def test_non404_login_lane_failure_degrades_to_anonymous(self):
+        self.auth.logins.has_session.return_value = True
+        self.auth.logins.from_session.side_effect = (
+            campus_python.errors.MalformedResponseError()
+        )
+        with request_context() as _ctx:
+            flask.session[LOGIN_STORAGE_KEY] = "login-502"
+            context.push_context(self.campus, self.cache)
+            self.assertIsNone(flask.g.user)
+            self.assertIsNone(flask.g.device)
+            self.assertNotIn(LOGIN_STORAGE_KEY, flask.session)
+
+    def test_users_fallback_denial_degrades_to_anonymous(self):
+        # The owning-client checks (#854) can deny the users-route
+        # fallback for a stale reference; pop the cookie so the next
+        # request is a clean redirect to login.
+        users_get = Mock(
+            side_effect=campus_python.errors.AccessDeniedError(
+                error_description="not the owning client"
+            )
+        )
+        self.auth.users = {"user-1": SimpleNamespace(get=users_get)}
+        self.auth.sessions.has_session.return_value = True
+        self.auth.sessions.from_session.return_value = SimpleNamespace(
+            user_id="user-1", user=None
+        )
+        with request_context() as _ctx:
+            flask.session[SESSION_STORAGE_KEY] = "sess-denied"
+            context.push_context(self.campus, self.cache)
+            self.assertIsNone(flask.g.user)
+            self.assertNotIn(SESSION_STORAGE_KEY, flask.session)
+
     def test_cache_expiry_refetches(self):
         user = SimpleNamespace(id="user@nyjc.edu.sg")
         self.auth.sessions.has_session.return_value = True
