@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "flask-campus"
-version = "0.2.0"
+version = "0.2.1"
 description = "Flask consumer layer for Campus apps: flask_campus glue + audit middleware - PEP 420 namespace portion under campus/flask_campus (the audit client ships with campus-api-python)"
 authors = ["Ng Jun Siang <ngjunsiang@gmail.com>"]
 readme = "README.md"
@@ -17,7 +17,7 @@ requests = "^2.32.4"
 # source URL into wheel metadata, so a campus-common/campus-model bump
 # requires a rebuild here (and downstream direct pins must match).
 campus-common = {url = "https://github.com/nyjc-computing/campus-common/releases/download/v0.5.1/campus_common-0.5.1-py3-none-any.whl"}
-campus-model = {url = "https://github.com/nyjc-computing/campus-model/releases/download/v0.2.4/campus_model-0.2.4-py3-none-any.whl"}
+campus-model = {url = "https://github.com/nyjc-computing/campus-model/releases/download/v0.2.5/campus_model-0.2.5-py3-none-any.whl"}
 # Session/login context seams, tracing propagation headers, and the
 # audit client the middleware ingests through (campus_python.audit,
 # flask-campus#31). The SDK releases wheels like the other dists
@@ -25,7 +25,7 @@ campus-model = {url = "https://github.com/nyjc-computing/campus-model/releases/d
 # bump requires a rebuild here (and downstream direct pins must match).
 # (Dep name matches the SDK package's distribution name; the import
 # name is campus_python.)
-campus-api-python = {url = "https://github.com/nyjc-computing/campus-api-python/releases/download/v0.10.9/campus_api_python-0.10.9-py3-none-any.whl"}
+campus-api-python = {url = "https://github.com/nyjc-computing/campus-api-python/releases/download/v0.10.10/campus_api_python-0.10.10-py3-none-any.whl"}
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.16.9"

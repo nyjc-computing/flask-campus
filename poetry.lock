@@ -138,23 +138,23 @@ files = [
 
 [[package]]
 name = "campus-api-python"
-version = "0.10.9"
+version = "0.10.10"
 description = "Campus API for Python projects"
 optional = false
 python-versions = ">=3.11,<3.15"
 groups = ["main"]
 files = [
-    {file = "campus_api_python-0.10.9-py3-none-any.whl", hash = "sha256:73e7d550cc8232fde9536db1469a6859654ea8204c08f5d4a311ea358099648d"},
+    {file = "campus_api_python-0.10.10-py3-none-any.whl", hash = "sha256:1600e12cc2d5809d86ca1dc23bd2e8ddffbeb84b258f4ab145d815fa7f5c6abf"},
 ]
 
 [package.dependencies]
 campus_common = {url = "https://github.com/nyjc-computing/campus-common/releases/download/v0.5.1/campus_common-0.5.1-py3-none-any.whl"}
-campus_model = {url = "https://github.com/nyjc-computing/campus-model/releases/download/v0.2.4/campus_model-0.2.4-py3-none-any.whl"}
+campus_model = {url = "https://github.com/nyjc-computing/campus-model/releases/download/v0.2.5/campus_model-0.2.5-py3-none-any.whl"}
 requests = ">=2.32.4,<3.0.0"
 
 [package.source]
 type = "url"
-url = "https://github.com/nyjc-computing/campus-api-python/releases/download/v0.10.9/campus_api_python-0.10.9-py3-none-any.whl"
+url = "https://github.com/nyjc-computing/campus-api-python/releases/download/v0.10.10/campus_api_python-0.10.10-py3-none-any.whl"
 
 [[package]]
 name = "campus-common"
@@ -176,13 +176,13 @@ url = "https://github.com/nyjc-computing/campus-common/releases/download/v0.5.1/
 
 [[package]]
 name = "campus-model"
-version = "0.2.4"
+version = "0.2.5"
 description = "Campus domain models: dataclass entities under campus/model - PEP 420 namespace portion"
 optional = false
 python-versions = ">=3.11.0,<3.15"
 groups = ["main"]
 files = [
-    {file = "campus_model-0.2.4-py3-none-any.whl", hash = "sha256:d71dbdd64e5defe707cce60eba79a2feba8d58b6ef7eacfc2718ab3ec4e4b661"},
+    {file = "campus_model-0.2.5-py3-none-any.whl", hash = "sha256:5b5de9010ae3cca6e1417ef59b51ebaf893a35fdf4eccb997930c9bb3e407e60"},
 ]
 
 [package.dependencies]
@@ -190,7 +190,7 @@ campus_common = {url = "https://github.com/nyjc-computing/campus-common/releases
 
 [package.source]
 type = "url"
-url = "https://github.com/nyjc-computing/campus-model/releases/download/v0.2.4/campus_model-0.2.4-py3-none-any.whl"
+url = "https://github.com/nyjc-computing/campus-model/releases/download/v0.2.5/campus_model-0.2.5-py3-none-any.whl"
 
 [[package]]
 name = "certifi"
@@ -1621,4 +1621,4 @@ watchdog = ["watchdog (>=2.3)"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11.0,<3.15"
-content-hash = "6925ad7d9143a8152d7a2d1d1967e113c2bd36b904d3cb792ffc0b32a3693262"
+content-hash = "1e3ec9b435a42705e7fcc1501771a1c9c9fcf4767614a32d1e9674f7909262da"
