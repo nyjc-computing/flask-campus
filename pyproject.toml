@@ -33,6 +33,13 @@ pyright = "^1.1.391"
 # openapi.py spec validation in tests (same pin as the suite)
 openapi-spec-validator = "^0.7.2"
 
+[tool.poetry.group.docs.dependencies]
+# Same docs stack as campus-api-python (mkdocs-material + mkdocstrings
+# with griffe static analysis — see mkdocs.yml for the namespace
+# lessons from the SDK setup).
+mkdocs-material = "^9.8.0"
+mkdocstrings = {extras = ["python"], version = "^1.0.8"}
+
 [tool.pyright]
 include = ["src", "tests"]
 useLibraryCodeForTypes = true

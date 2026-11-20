@@ -53,7 +53,7 @@ def reconcile(
 
     Args:
         request_args: The arguments from the request (e.g., URL params)
-        params: The function parameters to reconcile against
+        func: The function whose parameters to reconcile against
         allow_extra: Whether to allow extra arguments not in params
                      if True, they are included in reconciled args
                      if False, they are returned in extra_args

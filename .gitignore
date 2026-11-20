@@ -7,3 +7,6 @@ dist/
 
 # Local environment overrides (deployment routing, secrets)
 .env
+
+# mkdocs build output (deployed by CI via gh-pages)
+/site

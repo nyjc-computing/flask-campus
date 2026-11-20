@@ -251,6 +251,7 @@ class RequestWarningCollector(logging.Handler):
     """
 
     def emit(self, record: logging.LogRecord) -> None:
+        """Buffer a WARNING+ record onto the active request's span."""
         try:
             if record.levelno < logging.WARNING:
                 return
@@ -927,6 +928,7 @@ def instrument_requests_session(session: requests.Session) -> bool:
     original_request = session.request
 
     def request(method, url, **kwargs):
+        """Session.request stand-in that injects trace headers per call."""
         extra = propagation_headers()
         if extra:
             headers = dict(kwargs.get("headers") or {})

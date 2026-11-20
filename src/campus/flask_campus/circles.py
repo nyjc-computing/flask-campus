@@ -46,6 +46,7 @@ class _WithUserSession(typing.Protocol):
     """
 
     def with_user_session(self) -> typing.ContextManager[typing.Any]:
+        """Run a block as the signed-in user, yielding the client."""
         ...
 
 

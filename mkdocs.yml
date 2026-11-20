@@ -1,0 +1,84 @@
+site_name: Flask Campus
+site_description: >-
+  Flask consumer layer for Campus apps — login/session context,
+  request glue, the @journey decorator, and the audit middleware
+  (tracing + action journeys).
+repo_url: https://github.com/nyjc-computing/flask-campus
+repo_name: nyjc-computing/flask-campus
+
+strict: true
+
+theme:
+  name: material
+  features:
+    - content.code.copy
+    - navigation.sections
+    - navigation.top
+    - search.highlight
+    - toc.follow
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+
+plugins:
+  - search
+  - autorefs
+  - mkdocstrings:
+      handlers:
+        python:
+          # Resolve this dist's portions from src/ before anything
+          # installed (campus-common/model/SDK also live in the venv's
+          # campus.* namespace — only the portions in this repo are
+          # documented here).
+          paths: ["src"]
+          options:
+            # Static (AST) analysis, same as the SDK (lesson: dynamic
+            # inspection materializes interpreter-specific dunders on
+            # 3.13+). The campus.* namespace top is PEP 420 here, but
+            # every documented portion below it (campus.flask_campus,
+            # campus.flask_campus.audit) is a regular package with an
+            # __init__.py — griffe cannot descend into
+            # implicit-namespace subpackages of a regular parent.
+            docstring_style: google
+            docstring_section_style: table
+            members_order: source
+            show_root_heading: true
+            show_source: true
+            show_signature_annotations: true
+            # Render undocumented members too (heading + signature):
+            # undocumented ≠ non-public (SDK lesson — with the default,
+            # public methods silently vanish from the reference).
+            show_if_no_docstring: true
+
+markdown_extensions:
+  - admonition
+  - toc:
+      permalink: true
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+  - pymdownx.snippets:
+      # Version stamp (docs/snippets/version.md) is generated from
+      # pyproject.toml by scripts/sync_docs_version.py — CI regenerates
+      # and fails on drift, so the landing page can't go stale.
+      base_path: ["docs"]
+  - pymdownx.tabbed:
+      alternate_style: true
+
+nav:
+  - Home: index.md
+  - Getting started: getting-started.md
+  - Login & sessions: login.md
+  - Audit middleware: audit.md
+  - Reference:
+      - Login manager & context: reference/login-manager.md
+      - Views & request glue: reference/glue.md
+      - Audit middleware: reference/audit.md
