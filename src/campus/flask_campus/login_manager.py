@@ -224,6 +224,7 @@ class OAuthLoginManager:
         """Decorator to protect routes that require authentication."""
         @wraps(view)
         def wrapped_view(*args, **kwargs):
+            """Redirect signed-out users to sign-in, else run the view."""
             if not hasattr(flask.g, "user") or flask.g.user is None:
                 return flask.redirect(
                     flask.url_for('auth.login', next=flask.request.path)
@@ -255,6 +256,7 @@ class OAuthLoginManager:
         def decorator(view: Callable) -> Callable:
             @wraps(view)
             def wrapped_view(*args, **kwargs):
+                """Gate the view on sign-in + circle membership."""
                 user = getattr(flask.g, "user", None)
                 if user is None:
                     return flask.redirect(

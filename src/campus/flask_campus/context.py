@@ -88,6 +88,7 @@ class _Snapshottable(typing.Protocol):
     """Anything model-shaped that can snapshot itself for caching."""
 
     def to_resource(self) -> dict:
+        """Snapshot the object into its resource dict form."""
         ...
 
 

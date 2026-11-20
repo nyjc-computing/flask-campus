@@ -78,6 +78,7 @@ def journey(
     def decorator(view):
         @wraps(view)
         def wrapped(*args, **kwargs):
+            """Resolve the journey id, stamp g, then run the view."""
             journey_id = getattr(flask.g, "journey_id", None)
             if not journey_id:
                 # Standalone use (no journeys middleware): adopt the

@@ -6,6 +6,10 @@ context (`OAuthLoginManager`), trace/journey propagation, the audit
 middleware (`campus.flask_campus.audit`: tracing + journeys), `@journey`,
 and the OpenAPI generator core.
 
+User-facing documentation lives at
+<https://nyjc-computing.github.io/flask-campus/> (built from `docs/` —
+see AGENTS.md for the docs workflow and the version-bump docs rule).
+
 Part of the Campus distribution split
 ([nyjc-computing/campus#970](https://github.com/nyjc-computing/campus/issues/970)):
 apps install campus-common + campus-model + flask-campus (+ the SDK) and
