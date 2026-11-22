@@ -2,6 +2,6 @@
      Run `python scripts/sync_docs_version.py` after a version bump;
      CI regenerates this file and fails on drift. -->
 
-**Current release: [v0.2.2](https://github.com/nyjc-computing/flask-campus/releases/tag/v0.2.2)**
+**Current release: [v0.2.3](https://github.com/nyjc-computing/flask-campus/releases/tag/v0.2.3)**
 · release notes in the [changelog](https://github.com/nyjc-computing/flask-campus/blob/main/CHANGELOG.md)
 and on the [releases page](https://github.com/nyjc-computing/flask-campus/releases).

@@ -1,4 +1,11 @@
 # Changelog
+## 0.2.3 — 2026-11-22
+
+Pure repin release: campus-api-python v0.10.11 → **v0.10.12**
+(sdk#183 — explicit `?resolve=` on every membership probe). No code
+changes; the wheel-metadata pin rule requires a rebuild here before
+consumers (the campus suite) can lock the new SDK.
+
 ## 0.2.2 — 2026-11-22
 
 Transitive membership resolution (campus#1202, with campus#1203 and
