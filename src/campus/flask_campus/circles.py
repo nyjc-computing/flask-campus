@@ -6,9 +6,12 @@ This module answers "is the signed-in user in this circle" for view
 gates (OAuthLoginManager.circle_member_required), resolving membership
 the same way campus.api's own enforcement does: the caller's user ID
 (their email, which is also their user circle's name) against the
-target circle's members. It is view-level gating only — campus.api
-remains the enforcement point for the resources themselves; this gate
-exists so apps can render the right UI before the API's 403 wall.
+target circle, through the server's shared membership resolver —
+transitively, so a seeded group confers membership exactly as the
+API's 403 wall does (campus#1202). It is view-level gating only —
+campus.api remains the enforcement point for the resources
+themselves; this gate exists so apps can render the right UI before
+the API's 403 wall.
 
 Checks run as the signed-in user (campus.with_user_session), not with
 the app's client credentials: client principals hold no domain
@@ -16,7 +19,7 @@ authority, and circle reads are only open "for now".
 
 Membership answers are cached process-local per (circle, user) for a
 short TTL — warm admin views make zero upstream calls. Definitive
-non-membership (absent member, missing circle) fails closed with
+non-membership (unreachable member, missing circle) fails closed with
 False; infrastructure failures raise CirclesUnavailableError so the
 caller can distinguish a 403 from a degraded backend.
 """
@@ -72,8 +75,8 @@ class MembersCache:
     Keys are (circle_name, user_id) pairs; values are
     (expires_at, is_member). Expired entries are dropped lazily on
     read. Answers only — never the members dict itself: transitive
-    resolution (a stated campus.api refinement) changes which users
-    count as members, so caching raw membership data would drift.
+    resolution changes which users count as members, so caching raw
+    membership data would drift.
     """
 
     def __init__(self, ttl_seconds: float = CIRCLE_MEMBERS_TTL_SECONDS):
@@ -110,6 +113,13 @@ def is_member(
 ) -> bool:
     """True if `user_id` is a member of the named circle.
 
+    Membership resolves transitively through member group circles
+    (campus#1202): the gate-parity question, answered through the
+    same shared resolver campus.api's enforcement uses, so this check
+    agrees with the API's 403 wall by construction. A direct-only
+    answer is not offered — it would disagree with the gate for a
+    group-only member, the exact drift #1202 exists to prevent.
+
     The circle is resolved by name (names are unique best-effort and
     stable — role circles use dotted names like "timetable.admin";
     user circles are named after the email account, and user IDs are
@@ -139,14 +149,16 @@ def is_member(
                 )
                 answer = False
             else:
-                # The single-membership probe (campus#1098): the
-                # server's answer to "is this principal in this
-                # circle" — client checks keep resolving membership in
-                # exactly one place when campus.api adds access tiers
-                # or transitive resolution. 404 (absent member) is the
-                # expected negative answer; other errors surface.
+                # The shared-resolver probe (campus#1202): the
+                # server's answer to the gate's question "is this
+                # principal in this circle, transitively" — client
+                # checks keep resolving membership in exactly one
+                # place when campus.api adds access tiers. 404
+                # (unreachable member) is the expected negative
+                # answer; other errors surface.
                 answer = (
-                    client.api.circles[matches[0].id].members.get(user_id)
+                    client.api.circles[matches[0].id]
+                    .members.resolve(user_id)
                     is not None
                 )
     except CirclesUnavailableError:

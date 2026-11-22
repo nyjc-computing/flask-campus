@@ -3,8 +3,9 @@
 OAuthLoginManager.circle_member_required / circle_admin_required gate
 views on membership in a named circle, resolved through the user's
 session toward campus.api. The fake client mirrors the SDK surface the
-check consumes (with_user_session → api.circles → members.get probe);
-answers, not upstream shapes, are the contract here.
+check consumes (with_user_session → api.circles → members.resolve
+probe, campus#1202); answers, not upstream shapes, are the contract
+here.
 """
 
 import unittest
@@ -22,9 +23,20 @@ from campus.flask_campus.circles import (
 from campus.flask_campus.login_manager import OAuthLoginManager
 
 ROLE_CIRCLE_ID = "circle_role001"
-MEMBERS = {
-    "admin@campus.test": 15,
-    "teacher@campus.test": 10,
+RESOLUTIONS = {
+    # admin@campus.test: direct member; teacher@campus.test: via group
+    "admin@campus.test": {
+        "member_id": "admin@campus.test",
+        "access_value": 15,
+        "direct": True,
+        "via": [],
+    },
+    "teacher@campus.test": {
+        "member_id": "teacher@campus.test",
+        "access_value": 10,
+        "direct": False,
+        "via": ["timetable-staff"],
+    },
 }
 
 
@@ -44,11 +56,13 @@ class FakeCirclesCollection:
         collection = self
 
         class FakeMembers:
-            def get(self, member_id):
-                """The membership probe: access value, None when absent."""
+            def resolve(self, member_id, *, transitive=True):
+                """The resolver probe: resolution dict, None when absent."""
                 collection.probe_calls += 1
-                collection._calls.append(("members.get", circle_id, member_id))
-                return MEMBERS.get(member_id)
+                collection._calls.append(
+                    ("members.resolve", circle_id, member_id)
+                )
+                return RESOLUTIONS.get(member_id)
 
         return SimpleNamespace(id=circle_id, members=FakeMembers())
 

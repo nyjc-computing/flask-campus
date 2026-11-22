@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "flask-campus"
-version = "0.2.1"
+version = "0.2.2"
 description = "Flask consumer layer for Campus apps: flask_campus glue + audit middleware - PEP 420 namespace portion under campus/flask_campus (the audit client ships with campus-api-python)"
 authors = ["Ng Jun Siang <ngjunsiang@gmail.com>"]
 readme = "README.md"
@@ -25,7 +25,7 @@ campus-model = {url = "https://github.com/nyjc-computing/campus-model/releases/d
 # bump requires a rebuild here (and downstream direct pins must match).
 # (Dep name matches the SDK package's distribution name; the import
 # name is campus_python.)
-campus-api-python = {url = "https://github.com/nyjc-computing/campus-api-python/releases/download/v0.10.10/campus_api_python-0.10.10-py3-none-any.whl"}
+campus-api-python = {url = "https://github.com/nyjc-computing/campus-api-python/releases/download/v0.10.11/campus_api_python-0.10.11-py3-none-any.whl"}
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.16.9"
