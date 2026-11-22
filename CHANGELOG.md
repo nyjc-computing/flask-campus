@@ -1,4 +1,19 @@
 # Changelog
+## 0.2.2 — 2026-11-22
+
+Transitive membership resolution (campus#1202, with campus#1203 and
+campus-api-python v0.10.11):
+
+- `circles.is_member` — the engine behind `circle_member_required` /
+  `circle_admin_required` — now answers through the server's shared
+  membership resolver (`members.resolve`, the gate-parity probe)
+  instead of the direct-only `members.get`. Membership held through a
+  seeded group now passes the view gate exactly as it passes
+  campus.api's 403 wall; previously the gate could 403 a group-only
+  member the API would admit. SDK pin repinned to
+  campus-api-python v0.10.11 (requires the SDK release: an SDK bump
+  rebuilds this wheel's metadata).
+
 ## 0.2.0 — 2026-11-19
 
 **BREAKING** — audit namespace reorg (flask-campus#31, unfreezes the

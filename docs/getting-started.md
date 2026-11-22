@@ -69,9 +69,11 @@ def admin_panel(): ...
 def edit_timetable(): ...
 ```
 
-Circle gates check membership through campus.api circles (cached 60s),
-redirect signed-out users to sign-in, 403 non-members, and fail closed
-with 503 if the circles backend cannot answer. Enforcement lives in
+Circle gates check membership through campus.api circles (cached 60s,
+resolved transitively through member group circles — the same
+semantics as the API's enforcement, campus#1202), redirect signed-out
+users to sign-in, 403 non-members, and fail closed with 503 if the
+circles backend cannot answer. Enforcement lives in
 campus.api — these gates render the right UI, they are never the only
 protection for data.
 
