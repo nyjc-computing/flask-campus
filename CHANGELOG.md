@@ -1,4 +1,12 @@
 # Changelog
+## 0.2.4 — 2026-11-23
+
+Pure repin release: campus-model v0.2.5 → **v0.2.6** (VenueBooking.status
+approval lifecycle) and campus-api-python v0.10.12 → **v0.10.13**
+(the matching repin, campus#1217). No code changes; the
+wheel-metadata pin rule requires a rebuild here before consumers can
+lock the new pins.
+
 ## 0.2.3 — 2026-11-22
 
 Pure repin release: campus-api-python v0.10.11 → **v0.10.12**
