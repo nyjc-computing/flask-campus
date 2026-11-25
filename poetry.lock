@@ -138,13 +138,13 @@ files = [
 
 [[package]]
 name = "campus-api-python"
-version = "0.10.13"
+version = "0.11.1"
 description = "Campus API for Python projects"
 optional = false
 python-versions = ">=3.11,<3.15"
 groups = ["main"]
 files = [
-    {file = "campus_api_python-0.10.13-py3-none-any.whl", hash = "sha256:1abeaf959a27efe3123c8893a2727ce7ff72a5d4d4fd0f94c39cc58fb8b7c693"},
+    {file = "campus_api_python-0.11.1-py3-none-any.whl", hash = "sha256:8aea2efd98f35aeb5f4b1b6566e98c6800e7719e67336d65f3c045b273d33e09"},
 ]
 
 [package.dependencies]
@@ -154,7 +154,7 @@ requests = ">=2.32.4,<3.0.0"
 
 [package.source]
 type = "url"
-url = "https://github.com/nyjc-computing/campus-api-python/releases/download/v0.10.13/campus_api_python-0.10.13-py3-none-any.whl"
+url = "https://github.com/nyjc-computing/campus-api-python/releases/download/v0.11.1/campus_api_python-0.11.1-py3-none-any.whl"
 
 [[package]]
 name = "campus-common"
@@ -1621,4 +1621,4 @@ watchdog = ["watchdog (>=2.3)"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11.0,<3.15"
-content-hash = "8520dae88bb5fe06b233505abe617e908d45548ba8b8c42156f779505c9ddf4f"
+content-hash = "4a90d07098f8d6d9fa3fa5fdbc0c6abc076428be716ac0b5a6c6ce795a9bf1ab"
