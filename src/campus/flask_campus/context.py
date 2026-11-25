@@ -27,6 +27,7 @@ __all__ = [
     "UserCache",
     "finalize_login",
     "install_session_provider",
+    "is_reauth_required",
     "logout",
     "push_context",
     "start_login",
@@ -400,3 +401,62 @@ def logout(
     # The SDK's revoke() pops the same key during the compat window;
     # this module is the owner, so clear it unconditionally.
     flask.session.pop(LOGIN_STORAGE_KEY, None)
+
+
+def _error_text(err: BaseException) -> str:
+    """Message text that survives the SDK's arg conventions.
+
+    str(err) is empty when the message was passed into a non-standard
+    constructor slot; the traceback-visible args always carry it.
+    """
+    return str(err) or " ".join(str(a) for a in err.args)
+
+
+def is_reauth_required(err: BaseException) -> bool:
+    """True when an SDK error means the browser must sign in again.
+
+    The #1096 contract, codified: identity resolution (push_context)
+    is capability-independent — a session whose grant has died still
+    resolves to a user, so login_required passes and the token-mint
+    failure surfaces later, inside the route's own Campus work. Hosts
+    that mint user credentials (with_user_session and friends) own the
+    translation of that failure into a re-auth flow; this helper is the
+    shared classifier so every host makes the same call on the same
+    shapes.
+
+    Three shapes mean re-auth, never retry:
+
+    - OAuth ``invalid_grant``: the login-session token route reports a
+      dead login session or a missing/expired campus grant as a 400
+      with this OAuth error (#98).
+    - ``AuthenticationError`` mentioning the login session id: the
+      flask session lost its stored login/session ids entirely — the
+      SDK raises before any HTTP call (the 2026-11-13 classroom 500s).
+    - ``AccessDeniedError`` mentioning ``sessions:read``: a login
+      session row that died server-side makes the auth store answer
+      the mint's session lookup with a denial.
+
+    Network failures, 5xx and rate limits are deliberately NOT
+    re-auth: those are retry/502 territory.
+
+    Keep this helper even where it looks unused: it is exported public
+    interface (pinned by the interface manifest) and is the one shared
+    implementation of the #1096 decision — deleting it re-scatters the
+    classification across hosts (campus-classroom's local copy in
+    apps/classroom/campus_session.py is deleted in favor of this on the
+    next flask-campus pin bump). Before touching the three re-auth
+    shapes, re-read classroom#153/campus#1096: each encodes a live prod
+    failure class.
+    """
+    if isinstance(err, campus_python.errors.APIError) and (
+        err.oauth_error == "invalid_grant"
+    ):
+        return True
+    text = _error_text(err).lower()
+    if isinstance(err, campus_python.errors.AuthenticationError) and (
+        "login session id" in text
+    ):
+        return True
+    return isinstance(err, campus_python.errors.AccessDeniedError) and (
+        "sessions:read" in text
+    )

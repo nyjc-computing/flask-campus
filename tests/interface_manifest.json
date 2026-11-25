@@ -9,6 +9,7 @@
     "get_request_headers",
     "get_request_payload",
     "get_user_agent",
+    "is_reauth_required",
     "journey",
     "unpack_into",
     "unpack_request",

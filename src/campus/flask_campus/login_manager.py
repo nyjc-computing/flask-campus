@@ -214,6 +214,13 @@ class OAuthLoginManager:
         endpoint = flask.request.endpoint or ""
         if endpoint == "static" or endpoint.endswith(".static"):
             return
+        # Framework-owned instance, NOT self.campus (#40): the host's
+        # client may be mid with_user_session() block on another gthread
+        # request, carrying that block's user bearer — an ambient call
+        # on it would present the wrong principal and campus.auth would
+        # deny session-flow routes (#854/#1055), bricking this request
+        # into the /login loop (classroom#153). Do not swap these call
+        # sites back to self.campus; see the init comment above.
         context.push_context(self._framework_campus, self._cache)
 
         # Span identity (#820): the audit tracing middleware reads
@@ -233,6 +240,10 @@ class OAuthLoginManager:
         # The SDK resources resolve their session ids through this
         # module's flask.session storage from here on (idempotent).
         context.install_session_provider()
+        # The login flow rides the framework instance too (#40): its
+        # sessions.new/finalize/logins.new calls are session-flow routes
+        # that campus.auth only accepts from the owning client — exactly
+        # the credential an interleaved host session block would displace.
         bp = _create_bp(
             self._push_context_hook, self._framework_campus, self._cache,
             self.default_endpoint, login_scopes=self.login_scopes,
@@ -244,7 +255,17 @@ class OAuthLoginManager:
             app.before_app_request(self._push_context_hook)
 
     def login_required(self, view: Callable) -> Callable:
-        """Decorator to protect routes that require authentication."""
+        """Decorator to protect routes that require authentication.
+
+        This gate is IDENTITY-only (#1096 contract): a session whose
+        campus grant has died still resolves to a user, so the view
+        runs and any token mint inside it fails there. Hosts that mint
+        user credentials own the translation of that failure into a
+        re-auth flow — classify with
+        campus.flask_campus.is_reauth_required (the shared classifier;
+        campus-classroom's /api/ 401 + browser-redirect degrade is the
+        reference implementation, #98).
+        """
         @wraps(view)
         def wrapped_view(*args, **kwargs):
             """Redirect signed-out users to sign-in, else run the view."""
@@ -292,6 +313,8 @@ class OAuthLoginManager:
                         f"in '{circle}' cannot be verified."
                     ))
                 try:
+                    # is_member opens its own with_user_session() (#40):
+                    # keep that mint+read off the host's shared client.
                     member = circles.is_member(
                         self._framework_campus, self._circle_cache, circle, user_id
                     )
