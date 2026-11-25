@@ -174,7 +174,30 @@ class OAuthLoginManager:
                 deploying, since campus.auth validates the request
                 against that cap fail-closed.
         """
-        self.campus = campus_client or campus_python.Campus()
+        if isinstance(campus_client, campus_python.Campus) or campus_client is None:
+            # Real Campus client: the framework gets its own instance.
+            self.campus = campus_client or campus_python.Campus()
+            # Framework-owned client (flask-campus#40): every call
+            # flask_campus makes itself — the context push, the login
+            # flow, circle-membership probes — runs on this instance,
+            # never on the host's shared client. Hosts drive their
+            # client with user/app session blocks from gthread request
+            # threads, leaving whatever credential the current block
+            # holds on it; the framework's ambient calls (identity
+            # resolution, session finalize) must always present the
+            # client credential — campus.auth denies user principals on
+            # session-flow routes (#854/#1055), and a poisoned
+            # resolution loops the browser into /login (classroom#153).
+            # The session-id provider seam installed at init_app is
+            # global, so this instance resolves the same flask.session
+            # ids as the host's client.
+            self._framework_campus = campus_python.Campus()
+        else:
+            # Duck-typed client (test doubles, stub harnesses): there is
+            # no real Campus to isolate from, so framework calls use it
+            # directly and keep exercising the double.
+            self.campus = campus_client
+            self._framework_campus = campus_client
         self.default_endpoint = default_endpoint
         self.login_scopes = login_scopes
         self._cache = context.UserCache()
@@ -191,7 +214,7 @@ class OAuthLoginManager:
         endpoint = flask.request.endpoint or ""
         if endpoint == "static" or endpoint.endswith(".static"):
             return
-        context.push_context(self.campus, self._cache)
+        context.push_context(self._framework_campus, self._cache)
 
         # Span identity (#820): the audit tracing middleware reads
         # g.user_id / g.client_id when building this request's span.
@@ -211,7 +234,7 @@ class OAuthLoginManager:
         # module's flask.session storage from here on (idempotent).
         context.install_session_provider()
         bp = _create_bp(
-            self._push_context_hook, self.campus, self._cache,
+            self._push_context_hook, self._framework_campus, self._cache,
             self.default_endpoint, login_scopes=self.login_scopes,
         )
         app.register_blueprint(bp)
@@ -270,7 +293,7 @@ class OAuthLoginManager:
                     ))
                 try:
                     member = circles.is_member(
-                        self.campus, self._circle_cache, circle, user_id
+                        self._framework_campus, self._circle_cache, circle, user_id
                     )
                 except circles.CirclesUnavailableError as err:
                     flask.current_app.logger.error(
