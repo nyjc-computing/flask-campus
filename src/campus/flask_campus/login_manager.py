@@ -32,12 +32,27 @@ def _is_safe_redirect(redirect_url: str) -> bool:
         ('//', '/\\')
     )
 
+def _normalize_prefix(prefix: str | None) -> str:
+    """Normalize a login mount prefix to '' (standalone) or '/x' form.
+
+    Accepts "timetable", "/timetable" and "/timetable/" alike; empty or
+    None means the standalone root mount. Mirrors
+    campus.deploy.get_public_prefix's normalization so a deployment can
+    share one value between the two.
+    """
+    prefix = (prefix or "").strip()
+    if prefix and not prefix.startswith("/"):
+        prefix = "/" + prefix
+    return prefix.rstrip("/")
+
 def _create_bp(
         push_hook: Callable[[], None],
         campus: campus_python.Campus,
         cache: context.UserCache,
         default_endpoint: str,
         login_scopes: "list[str] | None" = None,
+        url_prefix: str = "/",
+        default_next: str = "/",
 ) -> flask.Blueprint:
     """Create authentication blueprint for Flask app.
 
@@ -51,8 +66,17 @@ def _create_bp(
             DEFAULT_LOGIN_SCOPES. Must be covered by the minting
             client's allowed_scopes cap (validated fail-closed
             upstream).
+        url_prefix: Mount prefix for the blueprint ("/" keeps every
+            route at the host root — the standalone default). A
+            path-dispatched deployment under a shared hostname sets its
+            namespace (e.g. "/timetable") so the auth surface mounts at
+            /timetable/login instead of the undispatchable /login
+            (flask-campus#47).
+        default_next: Where finalize_login sends users when no
+            login_next was stored; a prefixed mount defaults to its own
+            namespace root rather than the shared host's "/".
     """
-    bp = flask.Blueprint("auth", __name__, url_prefix="/")
+    bp = flask.Blueprint("auth", __name__, url_prefix=url_prefix)
     bp.before_request(push_hook)
 
     @bp.get("/login")
@@ -124,7 +148,7 @@ def _create_bp(
         context.push_context(campus, cache)
 
         # Redirect to the original destination
-        next_url = flask.session.pop('login_next', '/')
+        next_url = flask.session.pop('login_next', default_next)
         return flask.redirect(next_url)
 
     @bp.get("/logout")
@@ -158,6 +182,7 @@ class OAuthLoginManager:
             campus_client: campus_python.Campus | None = None,
             default_endpoint: str = "index",
             login_scopes: "list[str] | None" = None,
+            login_prefix: str | None = None,
     ):
         """Initialize the OAuthLoginManager.
 
@@ -173,6 +198,19 @@ class OAuthLoginManager:
                 must extend their client's allowed_scopes cap BEFORE
                 deploying, since campus.auth validates the request
                 against that cap fail-closed.
+            login_prefix: Mount prefix for the auth blueprint
+                (flask-campus#47). "timetable", "/timetable" and
+                "/timetable/" are equivalent; the default (None/'')
+                mounts /login, /finalize_login and /logout at the host
+                root — the standalone behavior every existing consumer
+                keeps. A deployment behind a path-dispatching gateway
+                sets its namespace (or the LOGIN_URL_PREFIX env, which
+                this argument overrides) so its auth surface mounts at
+                /<namespace>/login and becomes dispatchable under the
+                shared hostname; the OAuth callback URL
+                (url.full_url_for) and every login_required redirect
+                follow the prefix automatically. PUBLIC_URL stays a
+                bare origin — the callback is PUBLIC_URL + prefix.
         """
         if isinstance(campus_client, campus_python.Campus) or campus_client is None:
             # Real Campus client: the framework gets its own instance.
@@ -200,6 +238,13 @@ class OAuthLoginManager:
             self._framework_campus = campus_client
         self.default_endpoint = default_endpoint
         self.login_scopes = login_scopes
+        # Explicit argument beats the env ("" disables an env-set
+        # prefix); both normalize to '' (standalone) or '/x'.
+        self.login_prefix = _normalize_prefix(
+            login_prefix
+            if login_prefix is not None
+            else env.get("LOGIN_URL_PREFIX")
+        )
         self._cache = context.UserCache()
         self._circle_cache = circles.MembersCache()
 
@@ -247,6 +292,8 @@ class OAuthLoginManager:
         bp = _create_bp(
             self._push_context_hook, self._framework_campus, self._cache,
             self.default_endpoint, login_scopes=self.login_scopes,
+            url_prefix=self.login_prefix or "/",
+            default_next=self.login_prefix + "/" if self.login_prefix else "/",
         )
         app.register_blueprint(bp)
         if isinstance(app, flask.Flask):
