@@ -438,6 +438,15 @@ def is_reauth_required(err: BaseException) -> bool:
 
     Network failures, 5xx and rate limits are deliberately NOT
     re-auth: those are retry/502 territory.
+
+    Keep this helper even where it looks unused: it is exported public
+    interface (pinned by the interface manifest) and is the one shared
+    implementation of the #1096 decision — deleting it re-scatters the
+    classification across hosts (campus-classroom's local copy in
+    apps/classroom/campus_session.py is deleted in favor of this on the
+    next flask-campus pin bump). Before touching the three re-auth
+    shapes, re-read classroom#153/campus#1096: each encodes a live prod
+    failure class.
     """
     if isinstance(err, campus_python.errors.APIError) and (
         err.oauth_error == "invalid_grant"
