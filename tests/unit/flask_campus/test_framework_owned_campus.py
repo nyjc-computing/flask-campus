@@ -26,6 +26,7 @@ os.environ.setdefault("CLIENT_ID", "test-client-id")
 os.environ.setdefault("CLIENT_SECRET", "test-client-secret")
 # The /login and /logout routes build absolute URLs (campus#652).
 os.environ.setdefault("PUBLIC_URL", "https://classroom.test")
+os.environ.setdefault("CAMPUS_AUTH_URL", "https://campusauth.test/auth/v1")
 
 _PUSH_TARGET = "campus.flask_campus.login_manager.context.push_context"
 

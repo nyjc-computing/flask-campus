@@ -244,7 +244,17 @@ class OAuthLoginManager:
             app.before_app_request(self._push_context_hook)
 
     def login_required(self, view: Callable) -> Callable:
-        """Decorator to protect routes that require authentication."""
+        """Decorator to protect routes that require authentication.
+
+        This gate is IDENTITY-only (#1096 contract): a session whose
+        campus grant has died still resolves to a user, so the view
+        runs and any token mint inside it fails there. Hosts that mint
+        user credentials own the translation of that failure into a
+        re-auth flow — classify with
+        campus.flask_campus.is_reauth_required (the shared classifier;
+        campus-classroom's /api/ 401 + browser-redirect degrade is the
+        reference implementation, #98).
+        """
         @wraps(view)
         def wrapped_view(*args, **kwargs):
             """Redirect signed-out users to sign-in, else run the view."""
