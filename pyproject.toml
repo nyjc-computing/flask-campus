@@ -25,7 +25,7 @@ campus-model = {url = "https://github.com/nyjc-computing/campus-model/releases/d
 # bump requires a rebuild here (and downstream direct pins must match).
 # (Dep name matches the SDK package's distribution name; the import
 # name is campus_python.)
-campus-api-python = {url = "https://github.com/nyjc-computing/campus-api-python/releases/download/v0.10.13/campus_api_python-0.10.13-py3-none-any.whl"}
+campus-api-python = {url = "https://github.com/nyjc-computing/campus-api-python/releases/download/v0.11.1/campus_api_python-0.11.1-py3-none-any.whl"}
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.16.9"
