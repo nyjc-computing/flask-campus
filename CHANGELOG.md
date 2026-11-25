@@ -1,4 +1,18 @@
 # Changelog
+## 0.2.7 — 2026-11-26
+
+**Namespaced login blueprint (flask-campus#47)**: `OAuthLoginManager`
+gains `login_prefix` (or the `LOGIN_URL_PREFIX` env), mounting
+`/login`, `/finalize_login` and `/logout` under the app's namespace
+instead of the host root. Gateway-routed consumer apps (campus#1274)
+need this: four apps share the root-level `/login`, which a
+path-dispatching gateway cannot route. Default unchanged — unset keeps
+the standalone root mount, so existing consumers are unaffected until
+they opt in. `login_required`/circle-gate redirects and the OAuth
+callback URL follow the prefix automatically; `finalize_login`'s
+no-`next` fallback lands on the namespace root instead of the shared
+host's `/`.
+
 ## 0.2.6 — 2026-11-26
 
 Pure repin release: campus-model v0.2.6 → **v0.2.7** (naive API-key
