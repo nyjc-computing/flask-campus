@@ -1,25 +1,25 @@
 {
-    "campus.flask_campus": [
-        "HtmlResponse",
-        "JsonResponse",
-        "JsonViewFunction",
-        "OAuthLoginManager",
-        "ViewFunctionDecorator",
-        "audit",
-        "get_request_headers",
-        "get_request_payload",
-        "get_user_agent",
-        "is_reauth_required",
-        "journey",
-        "unpack_into",
-        "unpack_request",
-        "validate_json_response",
-        "validate_request_and_extract_json",
-        "validate_request_and_extract_urlparams"
-    ],
-    "campus.flask_campus.audit": [
-        "init_journeys",
-        "init_tracing",
-        "redact_sensitive"
-    ]
+  "campus.flask_campus": [
+    "HtmlResponse",
+    "JsonResponse",
+    "JsonViewFunction",
+    "OAuthLoginManager",
+    "ViewFunctionDecorator",
+    "audit",
+    "get_request_headers",
+    "get_request_payload",
+    "get_user_agent",
+    "is_reauth_required",
+    "journey",
+    "unpack_into",
+    "unpack_request",
+    "validate_json_response",
+    "validate_request_and_extract_json",
+    "validate_request_and_extract_urlparams"
+  ],
+  "campus.flask_campus.audit": [
+    "init_journeys",
+    "init_tracing",
+    "redact_sensitive"
+  ]
 }
