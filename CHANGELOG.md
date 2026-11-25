@@ -1,4 +1,30 @@
 # Changelog
+## 0.2.6 — 2026-11-26
+
+Pure repin release: campus-model v0.2.6 → **v0.2.7** (naive API-key
+expiry normalization, campus#1273) and campus-api-python
+v0.11.1 → **v0.11.2** (the matching repin). No code changes; the
+wheel-metadata pin rule requires a rebuild here before consumers can
+lock the new pins.
+
+## 0.2.5 — 2026-11-25
+
+Fix train for the prod sign-in loops (classroom#153):
+
+- **Framework-owned Campus (#40, PR #41)**: `OAuthLoginManager` drives
+  context push, the login flow, logout and circle-membership probes on
+  its own Campus instance instead of the host's shared client — a host
+  running `with_user_session()` blocks from gthread request threads can
+  no longer displace the framework's ambient credential (the
+  #854/#1055 session-flow denials behind the /login loops).
+- **Shared re-auth classifier (#1096, PR #42)**:
+  `context.is_reauth_required()` codifies the identity-vs-capability
+  contract and the three re-auth error shapes; exported at package
+  level, contract documented on `login_required`.
+- Inline rationale at the framework-campus call sites so the isolation
+  is not simplified away later.
+- SDK pin → campus-api-python v0.11.1 (#189 context-local session
+  credentials — the root-cause fix).
 ## 0.2.4 — 2026-11-23
 
 Pure repin release: campus-model v0.2.5 → **v0.2.6** (VenueBooking.status
