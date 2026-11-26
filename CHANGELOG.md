@@ -1,4 +1,18 @@
 # Changelog
+## Unreleased
+
+**Do-not-combine guard for `login_prefix` (flask-campus#50)**:
+constructing `OAuthLoginManager` with `login_prefix` set now emits a
+warning at construction — the static mount is for header-less
+deployments only, and behind campus-gateway it must be removed because
+combining it with PrefixFix's `X-Forwarded-Prefix` handling doubles the
+namespace (spec of record:
+[docs/url-namespacing.md](https://github.com/nyjc-computing/campus/blob/weekly/docs/url-namespacing.md),
+campus#1319). The `login_prefix` docstring is corrected accordingly: it
+previously recommended the argument for "a deployment behind a
+path-dispatching gateway", contradicting the spec rendered into the
+API reference.
+
 ## 0.2.8 — 2026-11-26
 
 **PrefixFix: gateway subpath mounting (flask-campus#50)**: `init_app`

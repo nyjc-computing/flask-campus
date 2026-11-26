@@ -8,6 +8,7 @@ exchange — live in flask_campus.context, which orchestrates the
 campus_python client's pure API calls.
 """
 
+import logging
 from functools import wraps
 from typing import Callable
 
@@ -21,6 +22,8 @@ from campus.common.services import get_base_url
 from campus.common.utils import url
 from campus.flask_campus import circles, context
 from campus.flask_campus.prefix import PrefixFix
+
+logger = logging.getLogger(__name__)
 
 
 def _is_safe_redirect(redirect_url: str) -> bool:
@@ -204,15 +207,38 @@ class OAuthLoginManager:
                 "/timetable/" are equivalent; the default (None/'')
                 mounts /login, /finalize_login and /logout at the host
                 root — the standalone behavior every existing consumer
-                keeps. A deployment behind a path-dispatching gateway
-                sets its namespace (or the LOGIN_URL_PREFIX env, which
-                this argument overrides) so its auth surface mounts at
-                /<namespace>/login and becomes dispatchable under the
-                shared hostname; the OAuth callback URL
-                (url.full_url_for) and every login_required redirect
-                follow the prefix automatically. PUBLIC_URL stays a
-                bare origin — the callback is PUBLIC_URL + prefix.
+                keeps. Header-less deployments ONLY: a foreign
+                path-dispatching proxy that does not set
+                X-Forwarded-Prefix, or a standalone deployment that
+                wants a namespaced auth surface on its own origin.
+                Behind campus-gateway, do NOT set it — init_app already
+                installs PrefixFix (flask-campus#50), which derives the
+                namespace from X-Forwarded-Prefix, and combining the
+                two doubles the namespace: PrefixFix strips one /<ns>,
+                so the statically mounted /<ns>/login never matches
+                while url_for emits SCRIPT_NAME + mount. See
+                docs/url-namespacing.md in the campus repo. The OAuth
+                callback URL (url.full_url_for) and every
+                login_required redirect follow the prefix
+                automatically. PUBLIC_URL stays a bare origin — the
+                callback is PUBLIC_URL + prefix.
         """
+        # Do-not-combine guard: a static login_prefix mount behind
+        # campus-gateway doubles the namespace (PrefixFix already
+        # namespaces from X-Forwarded-Prefix, fc#50), so flag it at
+        # construction — the docstring-only rule was easy to miss.
+        if login_prefix is not None:
+            logger.warning(
+                "login_prefix=%r is only for header-less deployments "
+                "(a foreign path-dispatching proxy without "
+                "X-Forwarded-Prefix, or a standalone namespaced auth "
+                "surface). Behind campus-gateway, remove it: init_app "
+                "installs PrefixFix (flask-campus#50), which derives "
+                "the namespace from X-Forwarded-Prefix, and combining "
+                "the two doubles the namespace. See "
+                "docs/url-namespacing.md in the campus repo.",
+                login_prefix,
+            )
         if isinstance(campus_client, campus_python.Campus) or campus_client is None:
             # Real Campus client: the framework gets its own instance.
             self.campus = campus_client or campus_python.Campus()
