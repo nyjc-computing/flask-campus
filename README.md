@@ -23,7 +23,7 @@ as `campus_python.audit`: one owner per import prefix.
 Release wheels are consumed as version-pinned URLs (Poetry):
 
 ```toml
-flask-campus = {url = "https://github.com/nyjc-computing/flask-campus/releases/download/v0.2.7/flask_campus-0.2.7-py3-none-any.whl"}
+flask-campus = {url = "https://github.com/nyjc-computing/flask-campus/releases/download/v0.2.8/flask_campus-0.2.8-py3-none-any.whl"}
 ```
 
 Dependencies: `flask`, `werkzeug`, `requests`, the
