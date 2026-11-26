@@ -7,6 +7,7 @@ auth paths. The default stays the standalone root mount, so every
 existing consumer keeps its exact behavior.
 """
 
+import logging
 import os
 import unittest
 from types import SimpleNamespace
@@ -282,6 +283,66 @@ class TestPrefixedLoginFlow(_PrefixCase):
             "/timetable/login?next=/timetable/protected",
             response.headers["Location"],
         )
+
+
+class TestLoginPrefixCombineWarning(_PrefixCase):
+    """Setting login_prefix warns at construction: the static mount is
+    for header-less deployments only, and behind campus-gateway
+    combining it with PrefixFix's X-Forwarded-Prefix handling
+    (flask-campus#50) doubles the namespace — the do-not-combine rule
+    in campus docs/url-namespacing.md (campus#1319)."""
+
+    def test_prefixed_construction_warns(self):
+        with self.assertLogs(
+            "campus.flask_campus.login_manager", level="WARNING"
+        ) as captured:
+            OAuthLoginManager(
+                campus_client=_FakeCampus(),  # type: ignore[arg-type]
+                login_prefix="timetable",
+            )
+        message = " ".join(captured.output)
+        self.assertIn("header-less", message)
+        self.assertIn("PrefixFix", message)
+        self.assertIn("docs/url-namespacing.md", message)
+
+    def test_root_construction_does_not_warn(self):
+        with self.assertNoLogs(
+            "campus.flask_campus.login_manager", level="WARNING"
+        ):
+            OAuthLoginManager(
+                campus_client=_FakeCampus(),  # type: ignore[arg-type]
+            )
+
+
+def test_prefixed_construction_warns_caplog(caplog):
+    """Pytest-native variant of the warning check (caplog): a set
+    login_prefix warns at construction. The repo's CI gate runs
+    `unittest discover`, which skips plain functions — the TestCase
+    above carries the same assertions for that runner."""
+    with caplog.at_level(
+        logging.WARNING, logger="campus.flask_campus.login_manager"
+    ):
+        OAuthLoginManager(
+            campus_client=_FakeCampus(),  # type: ignore[arg-type]
+            login_prefix="timetable",
+        )
+    message = " ".join(record.getMessage() for record in caplog.records)
+    assert "header-less" in message
+    assert "PrefixFix" in message
+    assert "docs/url-namespacing.md" in message
+
+
+def test_root_construction_does_not_warn_caplog(caplog):
+    """Pytest-native variant: the default (no login_prefix)
+    construction stays silent."""
+    with caplog.at_level(
+        logging.WARNING, logger="campus.flask_campus.login_manager"
+    ):
+        OAuthLoginManager(
+            campus_client=_FakeCampus(),  # type: ignore[arg-type]
+        )
+    warnings = [r for r in caplog.records if r.levelno >= logging.WARNING]
+    assert not warnings
 
 
 if __name__ == "__main__":
