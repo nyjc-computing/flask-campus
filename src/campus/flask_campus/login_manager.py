@@ -20,6 +20,7 @@ from campus.common import env
 from campus.common.services import get_base_url
 from campus.common.utils import url
 from campus.flask_campus import circles, context
+from campus.flask_campus.prefix import PrefixFix
 
 
 def _is_safe_redirect(redirect_url: str) -> bool:
@@ -281,10 +282,23 @@ class OAuthLoginManager:
             flask.g.client_id = client_id
 
     def init_app(self, app: flask.Flask | flask.Blueprint):
-        """Initialize the login manager with the Flask app."""
+        """Initialize the login manager with the Flask app.
+
+        On a Flask app this also installs the PrefixFix middleware
+        (flask-campus#50): X-Forwarded-Prefix from a path-dispatching
+        gateway moves into SCRIPT_NAME, making every url_for — static
+        assets, links, and this blueprint's routes — namespace-aware
+        with no per-app configuration. No-op when the header is absent
+        (standalone and origin-domain deployments).
+        """
         # The SDK resources resolve their session ids through this
         # module's flask.session storage from here on (idempotent).
         context.install_session_provider()
+        # Gateway subpath mounting (#50): wrap before anything else so
+        # the namespace is in place for all downstream routing and URL
+        # generation. Flask only — a Blueprint has no wsgi_app to wrap.
+        if isinstance(app, flask.Flask):
+            app.wsgi_app = PrefixFix(app.wsgi_app)
         # The login flow rides the framework instance too (#40): its
         # sessions.new/finalize/logins.new calls are session-flow routes
         # that campus.auth only accepts from the owning client — exactly

@@ -1,4 +1,25 @@
 # Changelog
+## 0.2.8 — 2026-11-26
+
+**PrefixFix: gateway subpath mounting (flask-campus#50)**: `init_app`
+installs a small WSGI middleware that moves `X-Forwarded-Prefix` into
+`SCRIPT_NAME` (stripped from `PATH_INFO`, header consumed), making
+**every** `url_for` — static assets, links, the auth blueprint —
+namespace-aware under a path-dispatching gateway. No-op when the header
+is absent (standalone/origin deployments keep their exact behavior).
+
+This supersedes the per-app patches the gateway cutover needed:
+`login_prefix` mounts (the header-driven mount namespaces the auth
+blueprint automatically) and per-app `static_url_path` edits (static
+URLs follow the namespace) become redundant for apps behind
+campus-gateway; the gateway declares the namespace with
+`X-Forwarded-Prefix` on the consumer locations. Nested forwarding
+middleware is safe — the header is consumed, never double-stripped.
+Invalid header values are rejected outright. Trust model: the header is
+honored from the immediately preceding hop, the same exposure class as
+X-Forwarded-Proto/Host; a direct-to-origin client can spoof it and only
+breaks its own generated URLs.
+
 ## 0.2.7 — 2026-11-26
 
 **Namespaced login blueprint (flask-campus#47)**: `OAuthLoginManager`
