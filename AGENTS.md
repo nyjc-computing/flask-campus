@@ -6,6 +6,17 @@ The Flask consumer layer for Campus apps (PEP 420 portion
 docstrings) published to GitHub Pages — same stack as
 campus-api-python.
 
+## Consumer apps are root-first
+
+Consumer apps are root-first: the namespace comes from the gateway's
+`X-Forwarded-Prefix` (PrefixFix moves it into `SCRIPT_NAME` since
+0.2.8), never from app configuration. Never hardcode namespace strings
+(`/timetable/`, ...) in routes, templates, or tests; emit every URL
+via `url_for`. `login_prefix` is superseded for gateway deployments —
+header-less setups only. Spec of record:
+[docs/url-namespacing.md](https://github.com/nyjc-computing/campus/blob/weekly/docs/url-namespacing.md)
+(campus repo).
+
 ## Docs workflow
 
 ```bash

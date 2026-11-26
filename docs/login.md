@@ -51,6 +51,29 @@ never matters. Enforcement stays in campus.api: a circle gate renders
 the right UI before the API's 403 wall — it must never be the only
 protection for data.
 
+## Gateway namespaces (X-Forwarded-Prefix)
+
+Since 0.2.8, `init_app` installs **PrefixFix**, a small WSGI middleware
+that moves the campus gateway's `X-Forwarded-Prefix` header into
+`SCRIPT_NAME` (stripped from `PATH_INFO`; the header is consumed, so
+nested forwarding middleware cannot double-strip). Apps are therefore
+**root-first** — routes defined without any namespace — and the campus
+gateway mounts them under its namespaces (`/timetable/`, `/apps/`,
+...) with zero per-app configuration: behind the gateway every
+`url_for` emits namespace-aware URLs (`/<ns>/…`), while on the origin
+domain `SCRIPT_NAME` is empty and everything stays root-relative.
+
+`login_prefix` (flask-campus#47) is **superseded** for gateway
+deployments — do not combine the two. PrefixFix strips the namespace
+the static mount baked into the route rules, so the prefixed routes
+never match and emitted URLs double (`SCRIPT_NAME` + mount).
+`login_prefix` remains valid only for header-less deployments: a
+foreign path-dispatching proxy that does not set
+`X-Forwarded-Prefix`, or a standalone deployment that wants a
+namespaced auth surface on its own origin.
+
+Normative spec: [URL namespacing](https://github.com/nyjc-computing/campus/blob/weekly/docs/url-namespacing.md).
+
 ## Journeys on login flows
 
 Services whose browser surface **is** the login flow (campus.auth) or
